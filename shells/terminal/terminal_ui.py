@@ -208,36 +208,34 @@ def show_system_info():
     current_screen = "system"
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
 
-    cpu = engine_get_cpu_name()
+    info = engine.get_system_info()
+
+    cpu = info["cpu"]
 
     if not cpu:
         cpu = "UNKNOWN PROCESSOR"
 
-    os_name = engine_get_os_name()
-
-    memory_gb = engine_get_memory_gb()
-
-    storage = engine_get_storage_info()
-
-    system_drive = storage["system_drive"]
-    total_gb = storage["total_gb"]
-    free_gb = storage["free_gb"]
+    os_name = info["os_name"]
+    memory_gb = info["memory_gb"]
+    system_drive = info["system_drive"]
+    total_gb = info["total_gb"]
+    free_gb = info["free_gb"]
 
     set_title(
-    "====================================\n"
-    "          SYSTEM INFO\n"
-    "===================================="
-)
+        "====================================\n"
+        "          SYSTEM INFO\n"
+        "===================================="
+    )
 
     set_menu(
-    f"OS .............. {os_name}\n"
-    f"CPU ............. {cpu}\n"
-    f"MEMORY .......... {memory_gb} GB\n"
-    f"STORAGE ({system_drive}) ... {total_gb} GB\n"
-    f"FREE SPACE ...... {free_gb} GB\n"
-    f"NETWORK ......... DISABLED\n\n"
-    "ESC. RETURN TO MAIN MENU"
-)
+        f"OS .............. {os_name}\n"
+        f"CPU ............. {cpu}\n"
+        f"MEMORY .......... {memory_gb} GB\n"
+        f"STORAGE ({system_drive}) ... {total_gb} GB\n"
+        f"FREE SPACE ...... {free_gb} GB\n"
+        f"NETWORK ......... DISABLED\n\n"
+        "ESC. RETURN TO MAIN MENU"
+    )
 
     set_status("")
 
