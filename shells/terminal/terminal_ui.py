@@ -9,7 +9,7 @@ games = engine.get_games()
 
 root = Tk()
 
-root.title("J-29 Terminal OS")
+root.title(identity["os_name"])
 root.configure(bg="black")
 root.geometry("800x500")
 root.attributes("-fullscreen", True)
@@ -132,11 +132,7 @@ def show_main_menu():
     scanline_canvas.itemconfig(canvas_cursor, state="normal")
     scanline_canvas.coords(canvas_cursor, 60, 290)
 
-    set_title(
-    "====================================\n"
-    "       J-29 TERMINAL OS v0.15\n"
-    "===================================="
-)
+    set_title( "====================================\n" f" {identity['os_name'].upper()} v{identity['version']}\n" "====================================" )
 
     set_status("")
     draw_main_menu()
