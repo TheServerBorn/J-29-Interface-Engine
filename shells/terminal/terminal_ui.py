@@ -3,6 +3,8 @@ from tkinter import Tk, Label, Canvas
 from engine.core import J29Engine
 
 engine = J29Engine()
+identity = engine.get_identity()
+
 games = engine.get_games()
 
 root = Tk()
@@ -132,7 +134,7 @@ def show_main_menu():
 
     set_title(
     "====================================\n"
-    "       J-29 TERMINAL OS v0.13\n"
+    "       J-29 TERMINAL OS v0.15\n"
     "===================================="
 )
 
