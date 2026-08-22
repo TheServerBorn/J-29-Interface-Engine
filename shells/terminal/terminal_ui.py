@@ -23,8 +23,8 @@ def terminal_mode(event=None):
     root.attributes("-fullscreen", True)
     root.config(cursor="none")
 
-root.bind("<F12>", maintenance_mode)
-root.bind("<F11>", terminal_mode)
+root.bind(f"<{settings['windowed_key']}>", maintenance_mode)
+root.bind(f"<{settings['fullscreen_key']}>", terminal_mode)
 
 root.config(cursor="none")
 scanline_canvas = Canvas(
