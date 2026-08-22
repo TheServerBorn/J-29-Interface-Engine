@@ -4,6 +4,7 @@ from engine.core import J29Engine
 
 engine = J29Engine()
 identity = engine.get_identity()
+settings = engine.get_settings()
 
 games = engine.get_games()
 
