@@ -5,6 +5,52 @@ All notable development milestones for the J29 Terminal Engine will be documente
 The project currently uses small development versions so each stable milestone can be tested, preserved, and documented before moving forward.
 
 ---
+## [0.14] - 2026-08-22
+
+### Added
+- Introduced modular `engine` package.
+- Added shared Core Engine interface through `J29Engine`.
+- Added dedicated system information module.
+- Added shared configuration loader.
+- Added game library loader.
+- Added program launcher module.
+- Added modular `shells` package.
+- Added J-29 Terminal Shell package.
+- Added clean `main.py` application entry point.
+- Preserved `j29.py` as a compatibility launcher.
+
+### Changed
+- Terminal Shell now communicates with engine functionality through `J29Engine`.
+- CPU, memory, storage, and operating-system detection moved out of the UI.
+- Game configuration loading moved out of the UI.
+- Program launching moved out of the UI.
+- Game configuration now uses the shared configuration loader.
+- Importing the Terminal Shell no longer automatically launches the application.
+
+### Architecture
+The project is now separated into the beginnings of:
+
+- Engine — shared functionality and services
+- Shell — interface and interaction
+- Entry point — application startup
+
+The J-29 Terminal remains the reference shell.
+
+### Testing
+Full regression test passed:
+
+- Boot sequence
+- Main menu navigation
+- System Information
+- Game Library
+- External program launching
+- Missing-program handling
+- Escape/back navigation
+
+### Status
+Stable development checkpoint.
+
+---
 
 ## [0.13] - 2026-08-21
 
