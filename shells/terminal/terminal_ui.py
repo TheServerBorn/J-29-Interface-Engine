@@ -1,7 +1,6 @@
 from tkinter import Tk, Label, Canvas
 
 from engine.games import load_games as engine_load_games
-from engine.launcher import launch_program as engine_launch_program
 from engine.core import J29Engine
 
 engine = J29Engine()
