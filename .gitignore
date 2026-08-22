@@ -1,0 +1,21 @@
+# User-specific configuration
+games.ini
+settings.ini
+identity.ini
+
+# Python generated files
+__pycache__/
+*.pyc
+
+# Build output
+build/
+dist/
+*.spec
+
+# Local development files
+.env
+*.log
+
+# Private / unreleased lore
+lore/private/
+archive_content/
