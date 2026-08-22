@@ -2,8 +2,6 @@ from tkinter import Tk, Label, Canvas
 
 import subprocess
 
-import configparser
-
 import platform
 
 import shutil
