@@ -1,9 +1,8 @@
-import configparser
+from engine.config import load_config
 
 
 def load_games(config_path="games.ini"):
-    config = configparser.ConfigParser()
-    config.read(config_path)
+    config = load_config(config_path)
 
     games = []
 
