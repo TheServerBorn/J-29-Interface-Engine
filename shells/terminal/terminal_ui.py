@@ -370,9 +370,10 @@ def blink_cursor():
     root.after(500, blink_cursor)
 
 
-root.bind("<Key>", key_pressed)
+def run():
+    root.bind("<Key>", key_pressed)
 
-start_boot_sequence()
+    start_boot_sequence()
+    blink_cursor()
 
-blink_cursor()
-root.mainloop()
+    root.mainloop()
