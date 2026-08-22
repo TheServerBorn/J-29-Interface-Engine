@@ -5,7 +5,8 @@ import platform
 from engine.system_info import (
     get_cpu_name as engine_get_cpu_name,
     get_memory_gb as engine_get_memory_gb,
-    get_storage_info as engine_get_storage_info
+    get_storage_info as engine_get_storage_info,
+    get_os_name as engine_get_os_name
 )
 
 from engine.games import load_games as engine_load_games
@@ -211,7 +212,7 @@ def show_system_info():
     if not cpu:
         cpu = "UNKNOWN PROCESSOR"
 
-    os_name = platform.system() + " " + platform.release()
+    os_name = engine_get_os_name()
 
     memory_gb = engine_get_memory_gb()
 
