@@ -1,7 +1,5 @@
 from tkinter import Tk, Label, Canvas
 
-import subprocess
-
 import platform
 
 import shutil
