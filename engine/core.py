@@ -1,6 +1,6 @@
 from engine.games import load_games
 from engine.launcher import launch_program
-from engine.config import load_identity
+from engine.config import load_identity, load_settings
 from engine.system_info import (
     get_cpu_name,
     get_memory_gb,
@@ -30,3 +30,6 @@ class J29Engine:
 
     def get_identity(self):
         return load_identity()
+
+    def get_settings(self):
+        return load_settings()
