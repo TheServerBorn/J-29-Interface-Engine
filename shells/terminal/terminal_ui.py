@@ -252,13 +252,12 @@ def start_boot_sequence():
     set_menu("")
     set_status("")
 
-    cpu = engine_get_cpu_name()
-    memory_gb = engine_get_memory_gb()
+    info = engine.get_system_info()
 
-    storage = engine_get_storage_info()
-
-    system_drive = storage["system_drive"]
-    total_gb = storage["total_gb"]
+    cpu = info["cpu"]
+    memory_gb = info["memory_gb"]
+    system_drive = info["system_drive"]
+    total_gb = info["total_gb"]
 
     boot_lines = [
         "INITIALIZING SYSTEM...",
