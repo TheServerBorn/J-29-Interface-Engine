@@ -14,6 +14,11 @@ import ctypes
 
 import winreg
 
+from engine.system_info import (
+    get_cpu_name as engine_get_cpu_name,
+    get_memory_gb as engine_get_memory_gb
+)
+
 config = configparser.ConfigParser()
 config.read("games.ini")
 
@@ -253,14 +258,14 @@ def show_system_info():
     current_screen = "system"
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
 
-    cpu = get_cpu_name()
+    cpu = engine_get_cpu_name()
 
     if not cpu:
         cpu = "UNKNOWN PROCESSOR"
 
     os_name = platform.system() + " " + platform.release()
 
-    memory_gb = get_memory_gb()
+    memory_gb = engine_get_memory_gb()
 
     system_drive = os.environ.get("SystemDrive", "C:") + "\\"
 
