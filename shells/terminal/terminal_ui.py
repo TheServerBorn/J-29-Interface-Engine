@@ -238,8 +238,8 @@ def start_boot_sequence():
     current_screen = "boot"
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
     set_title(
-    "CALLISTO COMPUTER SYSTEMS\n"
-    "J-29 PERSONAL TERMINAL"
+    f"{identity['manufacturer'].upper()}\n"
+    f"{identity['model'].upper()}"
 )
 
     set_menu("")
