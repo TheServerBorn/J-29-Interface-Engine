@@ -1,12 +1,5 @@
 from tkinter import Tk, Label, Canvas
 
-from engine.system_info import (
-    get_cpu_name as engine_get_cpu_name,
-    get_memory_gb as engine_get_memory_gb,
-    get_storage_info as engine_get_storage_info,
-    get_os_name as engine_get_os_name
-)
-
 from engine.games import load_games as engine_load_games
 from engine.launcher import launch_program as engine_launch_program
 from engine.core import J29Engine
