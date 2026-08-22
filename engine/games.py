@@ -1,7 +1,7 @@
 from engine.config import load_config
 
 
-def load_games(config_path="games.ini"):
+def load_games(config_path="config/games.ini"):
     config = load_config(config_path)
 
     games = []
