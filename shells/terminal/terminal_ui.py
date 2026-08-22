@@ -367,7 +367,11 @@ def blink_cursor():
 def run():
     root.bind("<Key>", key_pressed)
 
-    start_boot_sequence()
+    if settings["boot_sequence"]:
+        start_boot_sequence()
+    else:
+        show_main_menu()
+
     blink_cursor()
 
     root.mainloop()
