@@ -2,8 +2,6 @@ from tkinter import Tk, Label, Canvas
 
 import platform
 
-import os
-
 from engine.system_info import (
     get_cpu_name as engine_get_cpu_name,
     get_memory_gb as engine_get_memory_gb,
