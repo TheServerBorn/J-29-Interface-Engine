@@ -2,8 +2,6 @@ from tkinter import Tk, Label, Canvas
 
 import platform
 
-import shutil
-
 import os
 
 from engine.system_info import (
