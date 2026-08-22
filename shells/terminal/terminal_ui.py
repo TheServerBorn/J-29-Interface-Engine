@@ -217,14 +217,18 @@ def show_system_info():
     )
 
     set_menu(
-        f"OS .............. {os_name}\n"
-        f"CPU ............. {cpu}\n"
-        f"MEMORY .......... {memory_gb} GB\n"
-        f"STORAGE ({system_drive}) ... {total_gb} GB\n"
-        f"FREE SPACE ...... {free_gb} GB\n"
-        f"NETWORK ......... DISABLED\n\n"
-        "ESC. RETURN TO MAIN MENU"
-    )
+    f"MANUFACTURER .... {identity['manufacturer']}\n"
+    f"MODEL ........... {identity['model']}\n"
+    f"UNIT ID ......... {identity['unit_id']}\n"
+    f"SYSTEM .......... {identity['os_name']} v{identity['version']}\n\n"
+    f"HOST OS ......... {os_name}\n"
+    f"CPU ............. {cpu}\n"
+    f"MEMORY .......... {memory_gb} GB\n"
+    f"STORAGE ({system_drive}) ... {total_gb} GB\n"
+    f"FREE SPACE ...... {free_gb} GB\n"
+    f"NETWORK ......... DISABLED\n\n"
+    "ESC. RETURN TO MAIN MENU"
+)
 
     set_status("")
 
