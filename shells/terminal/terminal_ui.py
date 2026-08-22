@@ -13,7 +13,7 @@ root = Tk()
 root.title(identity["os_name"])
 root.configure(bg="black")
 root.geometry("800x500")
-root.attributes("-fullscreen", True)
+root.attributes("-fullscreen", settings["fullscreen"])
 
 def maintenance_mode(event=None):
     root.attributes("-fullscreen", False)
