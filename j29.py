@@ -16,7 +16,8 @@ import winreg
 
 from engine.system_info import (
     get_cpu_name as engine_get_cpu_name,
-    get_memory_gb as engine_get_memory_gb
+    get_memory_gb as engine_get_memory_gb,
+    get_storage_info as engine_get_storage_info
 )
 
 config = configparser.ConfigParser()
@@ -267,12 +268,11 @@ def show_system_info():
 
     memory_gb = engine_get_memory_gb()
 
-    system_drive = os.environ.get("SystemDrive", "C:") + "\\"
+    storage = engine_get_storage_info()
 
-    total, used, free = shutil.disk_usage(system_drive)
-
-    total_gb = round(total / (1024 ** 3))
-    free_gb = round(free / (1024 ** 3))
+    system_drive = storage["system_drive"]
+    total_gb = storage["total_gb"]
+    free_gb = storage["free_gb"]
 
     set_title(
     "====================================\n"
