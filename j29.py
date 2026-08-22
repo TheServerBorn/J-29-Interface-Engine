@@ -305,8 +305,8 @@ def start_boot_sequence():
     set_menu("")
     set_status("")
 
-    cpu = get_cpu_name()
-    memory_gb = get_memory_gb()
+    cpu = engine_get_cpu_name()
+    memory_gb = engine_get_memory_gb()
 
     system_drive = os.environ.get("SystemDrive", "C:") + "\\"
     total, used, free = shutil.disk_usage(system_drive)
