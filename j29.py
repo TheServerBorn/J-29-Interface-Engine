@@ -16,16 +16,9 @@ from engine.system_info import (
     get_storage_info as engine_get_storage_info
 )
 
-config = configparser.ConfigParser()
-config.read("games.ini")
+from engine.games import load_games as engine_load_games
 
-games = []
-
-for section in config.sections():
-    games.append({
-        "name": config[section]["name"],
-        "path": config[section]["path"]
-    })
+games = engine_load_games()
 
 root = Tk()
 
