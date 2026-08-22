@@ -15,7 +15,7 @@ from engine.system_info import (
 )
 
 from engine.games import load_games as engine_load_games
-
+from engine.launcher import launch_program as engine_launch_program
 games = engine_load_games()
 
 root = Tk()
@@ -355,9 +355,7 @@ def key_pressed(event):
 
             game_path = games[selected_game]["path"]
 
-            if game_path:
-                subprocess.Popen([game_path])
-            else:
+            if not engine_launch_program(game_path):
                 set_status("PROGRAM NOT AVAILABLE")
 
         elif event.keysym == "Escape":
