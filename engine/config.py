@@ -47,3 +47,45 @@ def load_identity(config_path="config/identity.ini"):
             fallback=""
         ),
     }
+
+
+def load_settings(config_path="config/settings.ini"):
+    config = load_config(config_path)
+
+    return {
+        "fullscreen": config.getboolean(
+            "INTERFACE",
+            "fullscreen",
+            fallback=True
+        ),
+        "boot_sequence": config.getboolean(
+            "INTERFACE",
+            "boot_sequence",
+            fallback=True
+        ),
+        "show_footer": config.getboolean(
+            "INTERFACE",
+            "show_footer",
+            fallback=True
+        ),
+        "audio_enabled": config.getboolean(
+            "AUDIO",
+            "enabled",
+            fallback=True
+        ),
+        "master_volume": config.getint(
+            "AUDIO",
+            "master_volume",
+            fallback=70
+        ),
+        "fullscreen_key": config.get(
+            "DEVELOPMENT",
+            "fullscreen_key",
+            fallback="F11"
+        ),
+        "windowed_key": config.get(
+            "DEVELOPMENT",
+            "windowed_key",
+            fallback="F12"
+        ),
+    }
