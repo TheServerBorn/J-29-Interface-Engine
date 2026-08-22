@@ -50,3 +50,6 @@ def get_storage_info():
         "total_gb": round(total / (1024 ** 3)),
         "free_gb": round(free / (1024 ** 3)),
     }
+
+def get_os_name():
+    return platform.system() + " " + platform.release()
