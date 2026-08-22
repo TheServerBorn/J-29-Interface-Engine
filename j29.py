@@ -308,9 +308,10 @@ def start_boot_sequence():
     cpu = engine_get_cpu_name()
     memory_gb = engine_get_memory_gb()
 
-    system_drive = os.environ.get("SystemDrive", "C:") + "\\"
-    total, used, free = shutil.disk_usage(system_drive)
-    total_gb = round(total / (1024 ** 3))
+    storage = engine_get_storage_info()
+
+    system_drive = storage["system_drive"]
+    total_gb = storage["total_gb"]
 
     boot_lines = [
         "INITIALIZING SYSTEM...",
