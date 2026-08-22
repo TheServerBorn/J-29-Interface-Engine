@@ -351,7 +351,7 @@ def key_pressed(event):
 
             game_path = games[selected_game]["path"]
 
-            if not engine_launch_program(game_path):
+            if not engine.launch_game(game_path):
                 set_status("PROGRAM NOT AVAILABLE")
 
         elif event.keysym == "Escape":
