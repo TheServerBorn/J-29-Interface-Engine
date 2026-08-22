@@ -46,6 +46,18 @@ The original reference implementation is:
 
 Users will eventually be able to configure their own system identities without modifying the source code.
 
+## Reference Hardware / Case Design
+
+The reference J29 build uses the **Raspberry Pi Retro Computer** enclosure designed by **lowbudgettech**.
+
+**Original designer:** lowbudgettech  
+**Original project:** Raspberry Pi Retro Computer  
+**Thingiverse:** https://www.thingiverse.com/thing:3478048
+
+The enclosure design is the work of its original creator and is not part of the J29 Terminal Engine software.
+
+J29 Terminal Engine does not require this specific enclosure. The software can be used with custom cases, repurposed computers, cyberdecks, mini PCs, and other hardware.
+
 ## Long-Term Goals
 
 J29 is planned to support:
