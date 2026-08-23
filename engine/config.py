@@ -1,4 +1,6 @@
 import configparser
+import shutil
+from pathlib import Path
 
 
 def load_config(config_path):
@@ -6,8 +8,21 @@ def load_config(config_path):
     config.read(config_path)
     return config
 
+def ensure_config_file(config_path):
+    config_file = Path(config_path)
+
+    if config_file.exists():
+        return
+
+    template_file = config_file.with_name(
+        f"{config_file.stem}.example{config_file.suffix}"
+    )
+
+    if template_file.exists():
+        shutil.copyfile(template_file, config_file)
 
 def load_identity(config_path="config/identity.ini"):
+    ensure_config_file(config_path)
     config = load_config(config_path)
 
     return {
@@ -50,6 +65,7 @@ def load_identity(config_path="config/identity.ini"):
 
 
 def load_settings(config_path="config/settings.ini"):
+    ensure_config_file(config_path)
     config = load_config(config_path)
 
     return {
