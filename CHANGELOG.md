@@ -6,6 +6,33 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.18] - 2026-08-23
+
+### Added
+- Context-sensitive dynamic footer
+- Screen-specific control hints
+- Temporary footer status messages
+- Automatic status-message timeout and footer restoration
+- Responsive footer positioning near the bottom of the window
+
+### Changed
+- Main Menu now displays navigation controls in the footer
+- Game Library controls moved from inline menu text to the footer
+- System Info navigation hint moved to the footer
+- Existing `show_footer` setting now controls footer visibility
+- Program launch errors now temporarily replace the control footer
+
+### Verified
+- Main Menu, Game Library, and System Info display the correct contextual footer
+- `show_footer=false` hides the footer across screens
+- `show_footer=true` restores normal footer behavior
+- `PROGRAM NOT AVAILABLE` automatically returns to the Game Library controls after 5 seconds
+- Footer remains correctly positioned in fullscreen and windowed modes
+- Temporary status recovery works correctly after resizing
+- Full v0.18 regression test passed
+
+---
+
 ## [0.17] - 2026-08-23
 
 ### Added
