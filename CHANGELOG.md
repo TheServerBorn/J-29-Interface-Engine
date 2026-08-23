@@ -5,6 +5,71 @@ All notable development milestones for the J29 Terminal Engine will be documente
 The project currently uses small development versions so each stable milestone can be tested, preserved, and documented before moving forward.
 
 ---
+
+## [0.15] - 2026-08-22
+
+### Added
+- Added configurable machine identity system.
+- Added `identity.ini` and public `identity.example.ini` configuration structure.
+- Added configurable manufacturer name.
+- Added configurable system / OS name.
+- Added configurable model name.
+- Added configurable unit ID.
+- Added optional owner and location fields.
+- Added shared settings configuration system.
+- Added `settings.ini` and public `settings.example.ini`.
+- Added configurable startup fullscreen behavior.
+- Added configurable boot-sequence behavior.
+- Added configurable development fullscreen and windowed-mode keys.
+- Added configuration fallbacks when identity or settings files are missing.
+- Added safe handling for an empty or missing game library.
+
+### Changed
+- Boot branding now uses the configured machine identity.
+- Window title now uses the configured system name.
+- Terminal title now uses the configured system name and version.
+- System Information now displays fictional machine identity alongside real host hardware information.
+- Game configuration moved into the `config/` directory.
+- Public configuration templates are separated from local user configuration.
+- Local identity, settings, and game configuration files remain excluded from Git.
+
+### Configuration
+Public templates:
+
+    config/identity.example.ini
+    config/settings.example.ini
+    config/games.example.ini
+
+Local configuration:
+
+    config/identity.ini
+    config/settings.ini
+    config/games.ini
+
+Local configuration files are ignored by Git.
+
+### Testing
+Full regression test passed:
+
+- Boot sequence
+- Main menu navigation
+- Dynamic machine branding
+- System Information
+- Game Library
+- External program launching
+- Missing-program handling
+- Empty-library handling
+- Fullscreen startup setting
+- Boot-sequence enable/disable
+- Configurable development keys
+- Escape/back navigation
+- Missing identity fallback
+- Missing settings fallback
+
+### Status
+Stable development checkpoint.
+
+---
 ## [0.14] - 2026-08-22
 
 ### Added
