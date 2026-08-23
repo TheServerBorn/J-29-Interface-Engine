@@ -73,7 +73,7 @@ canvas_title = scanline_canvas.create_text(
     anchor="nw",
     text="",
     fill=green,
-    font=("Courier New", TITLE_FONT_SIZE, "bold")
+    font=(theme["font_family"], TITLE_FONT_SIZE, "bold")
 )
 
 
@@ -88,7 +88,7 @@ canvas_menu = scanline_canvas.create_text(
     anchor="nw",
     text="",
     fill=green,
-    font=("Courier New", MENU_FONT_SIZE)
+    font=(theme["font_family"], MENU_FONT_SIZE)
 )
 
 
@@ -104,7 +104,7 @@ canvas_status = scanline_canvas.create_text(
     anchor="nw",
     text="",
     fill=green,
-    font=("Courier New", STATUS_FONT_SIZE)
+    font=(theme["font_family"], STATUS_FONT_SIZE)
 )
 
 def set_status(text):
@@ -119,7 +119,7 @@ canvas_cursor = scanline_canvas.create_text(
     anchor="nw",
     text="█",
     fill=green,
-    font=("Courier New", CURSOR_FONT_SIZE)
+    font=(theme["font_family"], CURSOR_FONT_SIZE)
 )
 
 current_screen = "main"
