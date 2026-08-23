@@ -217,19 +217,30 @@ def show_system_info():
         "===================================="
     )
 
+    owner_line = ""
+    location_line = ""
+
+    if identity["owner"]:
+        owner_line = f"OWNER ........... {identity['owner']}\n"
+
+    if identity["location"]:
+        location_line = f"LOCATION ........ {identity['location']}\n"
+
     set_menu(
-    f"MANUFACTURER .... {identity['manufacturer']}\n"
-    f"MODEL ........... {identity['model']}\n"
-    f"UNIT ID ......... {identity['unit_id']}\n"
-    f"SYSTEM .......... {identity['os_name']} v{identity['version']}\n\n"
-    f"HOST OS ......... {os_name}\n"
-    f"CPU ............. {cpu}\n"
-    f"MEMORY .......... {memory_gb} GB\n"
-    f"STORAGE ({system_drive}) ... {total_gb} GB\n"
-    f"FREE SPACE ...... {free_gb} GB\n"
-    f"NETWORK ......... DISABLED\n\n"
-    "ESC. RETURN TO MAIN MENU"
-)
+        f"MANUFACTURER .... {identity['manufacturer']}\n"
+        f"MODEL ........... {identity['model']}\n"
+        f"UNIT ID ......... {identity['unit_id']}\n"
+        f"SYSTEM .......... {identity['os_name']} v{identity['version']}\n"
+        f"{owner_line}"
+        f"{location_line}\n"
+        f"HOST OS ......... {os_name}\n"
+        f"CPU ............. {cpu}\n"
+        f"MEMORY .......... {memory_gb} GB\n"
+        f"STORAGE ({system_drive}) ... {total_gb} GB\n"
+        f"FREE SPACE ...... {free_gb} GB\n"
+        f"NETWORK ......... DISABLED\n\n"
+        "ESC. RETURN TO MAIN MENU"
+    )
 
     set_status("")
 
