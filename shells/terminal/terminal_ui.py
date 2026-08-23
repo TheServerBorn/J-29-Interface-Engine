@@ -12,7 +12,7 @@ games = engine.get_games()
 root = Tk()
 
 root.title(identity["os_name"])
-root.configure(bg="black")
+root.configure(bg=theme["background"])
 root.geometry("800x500")
 root.attributes("-fullscreen", settings["fullscreen"])
 
@@ -30,7 +30,7 @@ root.bind(f"<{settings['fullscreen_key']}>", terminal_mode)
 root.config(cursor="none")
 scanline_canvas = Canvas(
     root,
-    bg="black",
+    bg=theme["background"],
     highlightthickness=0
 )
 
