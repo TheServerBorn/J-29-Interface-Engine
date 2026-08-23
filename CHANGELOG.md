@@ -6,6 +6,33 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.16] - 2026-08-22
+
+### Added
+- Theme configuration system
+- `engine/theme.py` theme loader
+- Configurable theme selection through `settings.ini`
+- Callisto Green reference theme
+- Amber Terminal alternate theme
+- Configurable primary and secondary colors
+- Configurable background color
+- Configurable font family and font sizes
+- Configurable scanline enable/disable and spacing
+- Configurable cursor style
+
+### Changed
+- Terminal Shell visual settings now load from theme configuration instead of hardcoded values
+- Theme selection is exposed through the core engine
+
+### Verified
+- Callisto Green and Amber Terminal can be switched without Python code changes
+- Amber theme colors and underscore cursor load correctly
+- Callisto Green restores correctly after theme switching
+- Scanlines can be enabled or disabled through theme configuration
+- Full v0.16 regression test passed
+
+---
+
 ## [0.15] - 2026-08-22
 
 ### Added
