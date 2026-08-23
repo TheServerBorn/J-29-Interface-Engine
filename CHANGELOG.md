@@ -6,6 +6,37 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.18] - 2026-08-23
+
+### Added
+- Persistent favorite game tracking
+- Persistent recent-game history
+- Stable game identifiers from `games.ini` section names
+- Favorites menu
+- Recent Games menu
+- In-app favorite toggle using the `F` key
+- Favorite toggle hint in the Game Library
+
+### Changed
+- Successful game launches now record recent history
+- Recent history keeps the five most recent games
+- Duplicate recent entries are prevented
+- Terminal Shell main menu now includes Favorites and Recent Games
+- Cursor position adjusted for the expanded main menu
+
+### Verified
+- Favorites persist across restarts
+- Recent games persist across restarts
+- Favorites can be added and removed from inside J29
+- Favorites can launch games
+- Recent Games can launch games
+- Failed launches are not added to recent history
+- Duplicate recent entries are prevented
+- Empty Favorites view is handled safely
+- Full v0.18 regression test passed
+
+---
+
 ## [0.17] - 2026-08-23
 
 ### Added
