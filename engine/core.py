@@ -36,4 +36,9 @@ class J29Engine:
         return load_settings()
 
     def get_theme(self):
-        return load_theme()
+        settings = load_settings()
+        theme_name = settings["theme"]
+
+        return load_theme(
+            f"themes/{theme_name}/theme.ini"
+        )
