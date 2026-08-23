@@ -6,6 +6,25 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.17] - 2026-08-23
+
+### Added
+- First-run configuration bootstrap
+- Automatic creation of `config/identity.ini` from `identity.example.ini`
+- Automatic creation of `config/settings.ini` from `settings.example.ini`
+
+### Changed
+- Identity and settings loaders now ensure their local configuration files exist before loading
+
+### Verified
+- Missing identity config is recreated automatically
+- Missing settings config is recreated automatically
+- Both configs can be recreated together during a fresh-install simulation
+- Existing user configuration files are preserved and not overwritten
+- J29 boots normally after first-run configuration creation
+
+---
+
 ## [0.16] - 2026-08-22
 
 ### Added
