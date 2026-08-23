@@ -1,3 +1,4 @@
+from engine.theme import load_theme
 from engine.games import load_games
 from engine.launcher import launch_program
 from engine.config import load_identity, load_settings
@@ -33,3 +34,6 @@ class J29Engine:
 
     def get_settings(self):
         return load_settings()
+
+    def get_theme(self):
+        return load_theme()
