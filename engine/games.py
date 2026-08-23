@@ -8,6 +8,7 @@ def load_games(config_path="config/games.ini"):
 
     for section in config.sections():
         games.append({
+            "id": section,
             "name": config[section]["name"],
             "path": config[section]["path"]
         })
