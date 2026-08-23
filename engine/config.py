@@ -68,6 +68,11 @@ def load_settings(config_path="config/settings.ini"):
             "show_footer",
             fallback=True
         ),
+        "theme": config.get(
+            "INTERFACE",
+            "theme",
+            fallback="callisto_green"
+        ),
         "audio_enabled": config.getboolean(
             "AUDIO",
             "enabled",
