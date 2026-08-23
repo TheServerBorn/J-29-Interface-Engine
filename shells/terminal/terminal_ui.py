@@ -129,7 +129,7 @@ cursor_character = cursor_styles.get(
 
 canvas_cursor = scanline_canvas.create_text(
     60,
-    360,
+    340,
     anchor="nw",
     text=cursor_character,
     fill=green,
@@ -146,7 +146,7 @@ def show_main_menu():
     current_screen = "main"
     selected_option = 0
     scanline_canvas.itemconfig(canvas_cursor, state="normal")
-    scanline_canvas.coords(canvas_cursor, 60, 290)
+    scanline_canvas.coords(canvas_cursor, 60, 340)
 
     set_title( "====================================\n" f" {identity['os_name'].upper()} v{identity['version']}\n" "====================================" )
 
@@ -483,12 +483,84 @@ def key_pressed(event):
 
     elif current_screen == "favorites":
 
-        if event.keysym == "Escape":
+        favorite_games = engine.get_favorite_games()
+
+        if event.keysym == "Up":
+
+            if not favorite_games:
+                return
+
+            selected_game -= 1
+
+            if selected_game < 0:
+                selected_game = len(favorite_games) - 1
+
+            draw_favorites()
+
+        elif event.keysym == "Down":
+
+            if not favorite_games:
+                return
+
+            selected_game += 1
+
+            if selected_game >= len(favorite_games):
+                selected_game = 0
+
+            draw_favorites()
+
+        elif event.keysym == "Return":
+
+            if not favorite_games:
+                return
+
+            game = favorite_games[selected_game]
+
+            if not engine.launch_game(game["path"], game["id"]):
+                set_status("PROGRAM NOT AVAILABLE")
+
+        elif event.keysym == "Escape":
             show_main_menu()
 
     elif current_screen == "recent":
 
-        if event.keysym == "Escape":
+        recent_games = engine.get_recent_games()
+
+        if event.keysym == "Up":
+
+            if not recent_games:
+                return
+
+            selected_game -= 1
+
+            if selected_game < 0:
+                selected_game = len(recent_games) - 1
+
+            draw_recent()
+
+        elif event.keysym == "Down":
+
+            if not recent_games:
+                return
+
+            selected_game += 1
+
+            if selected_game >= len(recent_games):
+                selected_game = 0
+
+            draw_recent()
+
+        elif event.keysym == "Return":
+
+            if not recent_games:
+                return
+
+            game = recent_games[selected_game]
+
+            if not engine.launch_game(game["path"], game["id"]):
+                set_status("PROGRAM NOT AVAILABLE")
+
+        elif event.keysym == "Escape":
             show_main_menu()
 
     elif current_screen == "system":
