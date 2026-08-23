@@ -129,6 +129,63 @@ def set_footer(text):
     else:
         set_status("")
 
+def update_command_display():
+    scanline_canvas.itemconfig(
+        canvas_command,
+        text="> " + command_buffer
+    )
+
+    command_box = scanline_canvas.bbox(canvas_command)
+
+    if command_box:
+        scanline_canvas.coords(
+            canvas_cursor,
+            command_box[2] + 4,
+            290
+        )
+def start_command_mode():
+    global command_mode, command_buffer
+
+    command_mode = True
+    command_buffer = ""
+    update_command_display()
+
+
+def stop_command_mode():
+    global command_mode, command_buffer
+
+    command_mode = False
+    command_buffer = ""
+
+    scanline_canvas.itemconfig(
+        canvas_command,
+        text=""
+    )
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        290
+    )
+
+    update_footer()
+
+def handle_command_input(event):
+    global command_buffer
+
+    if event.keysym == "Escape":
+        stop_command_mode()
+        return
+
+    if event.keysym == "BackSpace":
+        command_buffer = command_buffer[:-1]
+        update_command_display()
+        return
+
+    if event.char and event.char.isprintable():
+        command_buffer += event.char.upper()
+        update_command_display()
+
 def update_footer():
 
     if current_screen == "main":
@@ -173,9 +230,21 @@ canvas_cursor = scanline_canvas.create_text(
     font=(theme["font_family"], CURSOR_FONT_SIZE)
 )
 
+canvas_command = scanline_canvas.create_text(
+    60,
+    290,
+    anchor="nw",
+    text="",
+    fill=green,
+    font=(theme["font_family"], CURSOR_FONT_SIZE)
+)
+
 current_screen = "main"
 selected_option = 0
 selected_game = 0
+
+command_mode = False
+command_buffer = ""
 
 def show_main_menu():
     global current_screen, selected_option
@@ -354,7 +423,16 @@ def start_boot_sequence():
 
 def key_pressed(event):
 
-    global selected_option, selected_game
+    global selected_option, selected_game, command_mode
+
+    if command_mode:
+        handle_command_input(event)
+        return
+
+    if event.char and event.char.isalpha():
+        start_command_mode()
+        handle_command_input(event)
+        return
 
     if current_screen == "main":
 
