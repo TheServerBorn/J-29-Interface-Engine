@@ -165,8 +165,9 @@ def start_command_mode():
 
     command_mode = True
     command_buffer = ""
-    update_command_display()
 
+    set_footer("TYPE COMMAND   ESC CANCEL")
+    update_command_display()
 
 def stop_command_mode():
     global command_mode, command_buffer
