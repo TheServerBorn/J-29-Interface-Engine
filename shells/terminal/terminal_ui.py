@@ -157,10 +157,12 @@ def show_main_menu():
 def draw_main_menu():
 
     options = [
-        "GAME LIBRARY",
-        "SYSTEM INFO",
-        "EXIT"
-    ]
+    "GAME LIBRARY",
+    "FAVORITES",
+    "RECENT GAMES",
+    "SYSTEM INFO",
+    "EXIT"
+]
 
     menu_text = ""
 
@@ -212,6 +214,87 @@ def draw_game_library():
 
     set_menu(menu_text)
 
+def show_favorites():
+
+    global current_screen, selected_game
+
+    current_screen = "favorites"
+    selected_game = 0
+
+    set_title(
+        "====================================\n"
+        "             FAVORITES\n"
+        "===================================="
+    )
+
+    set_status("")
+    draw_favorites()
+
+
+def draw_favorites():
+
+    favorite_games = engine.get_favorite_games()
+
+    if not favorite_games:
+        set_menu(
+            "NO FAVORITES\n\n"
+            "ESC. RETURN TO MAIN MENU"
+        )
+        return
+
+    menu_text = ""
+
+    for i, game in enumerate(favorite_games):
+
+        if i == selected_game:
+            menu_text += "> " + game["name"] + "\n"
+        else:
+            menu_text += "  " + game["name"] + "\n"
+
+    menu_text += "\nESC. RETURN TO MAIN MENU"
+
+    set_menu(menu_text)
+
+def show_recent():
+
+    global current_screen, selected_game
+
+    current_screen = "recent"
+    selected_game = 0
+
+    set_title(
+        "====================================\n"
+        "          RECENT GAMES\n"
+        "===================================="
+    )
+
+    set_status("")
+    draw_recent()
+
+
+def draw_recent():
+
+    recent_games = engine.get_recent_games()
+
+    if not recent_games:
+        set_menu(
+            "NO RECENT GAMES\n\n"
+            "ESC. RETURN TO MAIN MENU"
+        )
+        return
+
+    menu_text = ""
+
+    for i, game in enumerate(recent_games):
+
+        if i == selected_game:
+            menu_text += "> " + game["name"] + "\n"
+        else:
+            menu_text += "  " + game["name"] + "\n"
+
+    menu_text += "\nESC. RETURN TO MAIN MENU"
+
+    set_menu(menu_text)
 
 def show_system_info():
 
@@ -330,14 +413,14 @@ def key_pressed(event):
             selected_option -= 1
 
             if selected_option < 0:
-                selected_option = 2
+                selected_option = 4
 
             draw_main_menu()
 
         elif event.keysym == "Down":
             selected_option += 1
 
-            if selected_option > 2:
+            if selected_option > 4:
                 selected_option = 0
 
             draw_main_menu()
@@ -348,9 +431,15 @@ def key_pressed(event):
                 show_game_library()
 
             elif selected_option == 1:
-                show_system_info()
+                show_favorites()
 
             elif selected_option == 2:
+                show_recent()
+
+            elif selected_option == 3:
+                show_system_info()
+
+            elif selected_option == 4:
                 root.destroy()
 
     elif current_screen == "games":
@@ -390,6 +479,16 @@ def key_pressed(event):
                 set_status("PROGRAM NOT AVAILABLE")
 
         elif event.keysym == "Escape":
+            show_main_menu()
+
+    elif current_screen == "favorites":
+
+        if event.keysym == "Escape":
+            show_main_menu()
+
+    elif current_screen == "recent":
+
+        if event.keysym == "Escape":
             show_main_menu()
 
     elif current_screen == "system":
