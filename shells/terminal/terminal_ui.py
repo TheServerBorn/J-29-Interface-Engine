@@ -116,11 +116,22 @@ def set_status(text):
         text=text
     )
 
+cursor_styles = {
+    "BLOCK": "█",
+    "UNDERSCORE": "_",
+    "BAR": "|",
+}
+
+cursor_character = cursor_styles.get(
+    theme["cursor_style"].upper(),
+    "█"
+)
+
 canvas_cursor = scanline_canvas.create_text(
     60,
     360,
     anchor="nw",
-    text="█",
+    text=cursor_character,
     fill=green,
     font=(theme["font_family"], CURSOR_FONT_SIZE)
 )
@@ -389,10 +400,10 @@ def key_pressed(event):
 def blink_cursor():
     current_text = scanline_canvas.itemcget(canvas_cursor, "text")
 
-    if current_text == "█":
+    if current_text == cursor_character:
         scanline_canvas.itemconfig(canvas_cursor, text="")
     else:
-        scanline_canvas.itemconfig(canvas_cursor, text="█")
+        scanline_canvas.itemconfig(canvas_cursor, text=cursor_character)
 
     root.after(500, blink_cursor)
 
