@@ -4,8 +4,8 @@ A customizable retro-computing frontend engine for games, physical media, and fi
 
 ## Project Status
 
-**Stable Development Release:** v0.14 — Core Engine Separation  
-**Current Development:** v0.15 — Identity & Configuration
+**Stable Development Release:** v0.16 - Theme System  
+**Current Development:** v0.17 - First-Run Setup
 
 J29 began as a custom retro terminal launcher for the Callisto J-29 computer project.
 
