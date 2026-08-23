@@ -210,7 +210,10 @@ def draw_game_library():
         else:
             menu_text += "  " + game["name"] + "\n"
 
-    menu_text += "\nESC. RETURN TO MAIN MENU"
+    menu_text += (
+    "\nF. TOGGLE FAVORITE"
+    "\nESC. RETURN TO MAIN MENU"
+)
 
     set_menu(menu_text)
 
