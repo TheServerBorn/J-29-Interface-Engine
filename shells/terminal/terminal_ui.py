@@ -63,10 +63,10 @@ def draw_scanlines(event=None):
 root.bind("<Configure>", draw_scanlines)
 root.after(100, draw_scanlines)
 green = theme["primary"]
-TITLE_FONT_SIZE = 24
-MENU_FONT_SIZE = 20
-STATUS_FONT_SIZE = 18
-CURSOR_FONT_SIZE = 20
+TITLE_FONT_SIZE = theme["title_size"]
+MENU_FONT_SIZE = theme["menu_size"]
+STATUS_FONT_SIZE = theme["status_size"]
+CURSOR_FONT_SIZE = theme["cursor_size"]
 canvas_title = scanline_canvas.create_text(
     60,
     50,
