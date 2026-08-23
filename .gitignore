@@ -2,6 +2,7 @@
 games.ini
 settings.ini
 identity.ini
+config/game_state.json
 
 # Python generated files
 __pycache__/
