@@ -129,6 +129,30 @@ def set_footer(text):
     else:
         set_status("")
 
+def update_footer():
+
+    if current_screen == "main":
+        set_footer("↑↓ MOVE   ENTER SELECT")
+
+    elif current_screen == "games":
+        set_footer("↑↓ MOVE   ENTER RUN   ESC BACK")
+
+    elif current_screen == "system":
+        set_footer("ESC BACK")
+
+    else:
+        set_footer("")
+
+
+def show_temporary_status(text, duration=5000):
+
+    set_status(text)
+
+    root.after(
+        duration,
+        update_footer
+    )
+
 cursor_styles = {
     "BLOCK": "█",
     "UNDERSCORE": "_",
@@ -395,7 +419,7 @@ def key_pressed(event):
             game_path = games[selected_game]["path"]
 
             if not engine.launch_game(game_path):
-                set_status("PROGRAM NOT AVAILABLE")
+                show_temporary_status("PROGRAM NOT AVAILABLE")
 
         elif event.keysym == "Escape":
             show_main_menu()
