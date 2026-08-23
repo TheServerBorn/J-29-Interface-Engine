@@ -68,8 +68,13 @@ class J29Engine:
 
         save_game_state(state)
 
-    def launch_game(self, program_path):
-        return launch_program(program_path)
+    def launch_game(self, program_path, game_id=None):
+        launched = launch_program(program_path)
+
+        if launched and game_id:
+            self.record_recent_game(game_id)
+
+        return launched
 
     def get_system_info(self):
         storage = get_storage_info()
