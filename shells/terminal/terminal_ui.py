@@ -108,6 +108,14 @@ def set_menu(text):
         text=text
     )
 
+def get_prompt_y():
+    menu_box = scanline_canvas.bbox(canvas_menu)
+
+    if menu_box:
+        return menu_box[3] + 30
+
+    return 290
+
 canvas_status = scanline_canvas.create_text(
     60,
     330,
@@ -130,6 +138,14 @@ def set_footer(text):
         set_status("")
 
 def update_command_display():
+    prompt_y = get_prompt_y()
+
+    scanline_canvas.coords(
+        canvas_command,
+        60,
+        prompt_y
+    )
+
     scanline_canvas.itemconfig(
         canvas_command,
         text="> " + command_buffer
@@ -141,8 +157,9 @@ def update_command_display():
         scanline_canvas.coords(
             canvas_cursor,
             command_box[2] + 4,
-            290
+            prompt_y
         )
+
 def start_command_mode():
     global command_mode, command_buffer
 
@@ -165,7 +182,7 @@ def stop_command_mode():
     scanline_canvas.coords(
         canvas_cursor,
         60,
-        290
+        get_prompt_y()
     )
 
     update_footer()
@@ -251,13 +268,27 @@ def show_main_menu():
 
     current_screen = "main"
     selected_option = 0
-    scanline_canvas.itemconfig(canvas_cursor, state="normal")
-    scanline_canvas.coords(canvas_cursor, 60, 290)
 
-    set_title( "====================================\n" f" {identity['os_name'].upper()} v{identity['version']}\n" "====================================" )
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="normal"
+    )
+
+    set_title(
+        "====================================\n"
+        f" {identity['os_name'].upper()} v{identity['version']}\n"
+        "===================================="
+    )
 
     set_footer("↑↓ MOVE   ENTER SELECT")
+
     draw_main_menu()
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        get_prompt_y()
+    )
 
 
 def draw_main_menu():
@@ -278,7 +309,6 @@ def draw_main_menu():
             menu_text += "  " + option + "\n"
 
     set_menu(menu_text)
-
 
 def show_game_library():
 
