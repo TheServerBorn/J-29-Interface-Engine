@@ -62,7 +62,7 @@ def draw_scanlines(event=None):
 
 root.bind("<Configure>", draw_scanlines)
 root.after(100, draw_scanlines)
-green = "#39FF14"
+green = theme["primary"]
 TITLE_FONT_SIZE = 24
 MENU_FONT_SIZE = 20
 STATUS_FONT_SIZE = 18
