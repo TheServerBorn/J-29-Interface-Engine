@@ -177,6 +177,13 @@ def show_game_library():
 
 def draw_game_library():
 
+    if not games:
+        set_menu(
+            "NO PROGRAMS AVAILABLE\n\n"
+            "ESC. RETURN TO MAIN MENU"
+        )
+        return
+
     menu_text = ""
 
     for i, game in enumerate(games):
@@ -334,6 +341,10 @@ def key_pressed(event):
     elif current_screen == "games":
 
         if event.keysym == "Up":
+
+            if not games:
+                return
+
             selected_game -= 1
 
             if selected_game < 0:
@@ -342,6 +353,10 @@ def key_pressed(event):
             draw_game_library()
 
         elif event.keysym == "Down":
+
+            if not games:
+                return
+
             selected_game += 1
 
             if selected_game >= len(games):
@@ -350,6 +365,9 @@ def key_pressed(event):
             draw_game_library()
 
         elif event.keysym == "Return":
+
+            if not games:
+                return
 
             game_path = games[selected_game]["path"]
 
