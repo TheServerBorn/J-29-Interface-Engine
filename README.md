@@ -4,8 +4,8 @@ A customizable retro-computing frontend engine for games, physical media, and fi
 
 ## Project Status
 
-**Stable Development Release:** v0.17 - First Run Setup 
-**Current Development:** v0.18 - Favorites + Recent Games
+**Stable Development Release:** v0.18 - Dynamic Footer 
+**Current Development:** v0.19 — Terminal Command System
 
 J29 began as a custom retro terminal launcher for the Callisto J-29 computer project.
 
