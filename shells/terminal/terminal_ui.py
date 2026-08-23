@@ -478,6 +478,19 @@ def key_pressed(event):
             if not engine.launch_game(game["path"], game["id"]):
                 set_status("PROGRAM NOT AVAILABLE")
 
+        elif event.keysym.lower() == "f":
+
+            if not games:
+                return
+
+            game = games[selected_game]
+            is_favorite = engine.toggle_favorite(game["id"])
+
+            if is_favorite:
+                set_status("ADDED TO FAVORITES")
+            else:
+                set_status("REMOVED FROM FAVORITES")
+
         elif event.keysym == "Escape":
             show_main_menu()
 
