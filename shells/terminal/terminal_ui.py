@@ -42,13 +42,20 @@ scanline_canvas.place(
 )
 def draw_scanlines(event=None):
 
+    width = root.winfo_width()
+    height = root.winfo_height()
+
+    # Keep the dynamic footer near the bottom of the window
+    scanline_canvas.coords(
+        canvas_status,
+        60,
+        height - 60
+    )
+
     scanline_canvas.delete("scanline")
 
     if not theme["scanlines"]:
         return
-
-    width = root.winfo_width()
-    height = root.winfo_height()
 
     for y in range(0, height, theme["scanline_spacing"]):
         scanline_canvas.create_line(
@@ -116,6 +123,12 @@ def set_status(text):
         text=text
     )
 
+def set_footer(text):
+    if settings["show_footer"]:
+        set_status(text)
+    else:
+        set_status("")
+
 cursor_styles = {
     "BLOCK": "█",
     "UNDERSCORE": "_",
@@ -150,7 +163,7 @@ def show_main_menu():
 
     set_title( "====================================\n" f" {identity['os_name'].upper()} v{identity['version']}\n" "====================================" )
 
-    set_status("")
+    set_footer("↑↓ MOVE   ENTER SELECT")
     draw_main_menu()
 
 
@@ -187,16 +200,13 @@ def show_game_library():
     "===================================="
 )
 
-    set_status("")
+    set_footer("↑↓ MOVE   ENTER RUN   ESC BACK")
     draw_game_library()
 
 def draw_game_library():
 
     if not games:
-        set_menu(
-            "NO PROGRAMS AVAILABLE\n\n"
-            "ESC. RETURN TO MAIN MENU"
-        )
+        set_menu("NO PROGRAMS AVAILABLE")
         return
 
     menu_text = ""
@@ -208,7 +218,6 @@ def draw_game_library():
         else:
             menu_text += "  " + game["name"] + "\n"
 
-    menu_text += "\nESC. RETURN TO MAIN MENU"
 
     set_menu(menu_text)
 
@@ -261,10 +270,9 @@ def show_system_info():
         f"STORAGE ({system_drive}) ... {total_gb} GB\n"
         f"FREE SPACE ...... {free_gb} GB\n"
         f"NETWORK ......... DISABLED\n\n"
-        "ESC. RETURN TO MAIN MENU"
     )
 
-    set_status("")
+    set_footer("ESC BACK")
 
 def start_boot_sequence():
 
