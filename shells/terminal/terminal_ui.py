@@ -44,16 +44,19 @@ def draw_scanlines(event=None):
 
     scanline_canvas.delete("scanline")
 
+    if not theme["scanlines"]:
+        return
+
     width = root.winfo_width()
     height = root.winfo_height()
 
-    for y in range(0, height, 6):
+    for y in range(0, height, theme["scanline_spacing"]):
         scanline_canvas.create_line(
             0,
             y,
             width,
             y,
-            fill="#031003",
+            fill=theme["secondary"],
             tags="scanline"
         )
 
