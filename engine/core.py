@@ -41,6 +41,33 @@ class J29Engine:
 
         return is_favorite
 
+    def get_recent_games(self):
+        state = load_game_state()
+        recent_ids = state.get("recent", [])
+
+        games_by_id = {
+            game["id"]: game
+            for game in self.get_games()
+        }
+
+        return [
+            games_by_id[game_id]
+            for game_id in recent_ids
+            if game_id in games_by_id
+        ]
+
+    def record_recent_game(self, game_id):
+        state = load_game_state()
+        recent = state.get("recent", [])
+
+        if game_id in recent:
+            recent.remove(game_id)
+
+        recent.insert(0, game_id)
+        state["recent"] = recent[:5]
+
+        save_game_state(state)
+
     def launch_game(self, program_path):
         return launch_program(program_path)
 
