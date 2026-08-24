@@ -213,6 +213,9 @@ def execute_command():
         remember_current_screen()
         show_system_info()
 
+    elif command == "BACK":
+        go_back()
+
 def handle_command_input(event):
     global command_buffer
 
