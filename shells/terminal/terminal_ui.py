@@ -166,7 +166,7 @@ def start_command_mode():
     command_mode = True
     command_buffer = ""
 
-    set_footer("TYPE COMMAND   ESC CANCEL")
+    set_footer("ENTER RUN   ESC CANCEL")
     update_command_display()
 
 def stop_command_mode():
@@ -188,11 +188,35 @@ def stop_command_mode():
 
     update_footer()
 
+def execute_command():
+    global command_mode, command_buffer
+
+    command = command_buffer.strip().upper()
+
+    command_mode = False
+    command_buffer = ""
+
+    scanline_canvas.itemconfig(
+        canvas_command,
+        text=""
+    )
+
+    if command == "HELP":
+        remember_current_screen()
+        show_command_help()
+
+    elif command == "GAMES":
+        show_game_library()
+
 def handle_command_input(event):
     global command_buffer
 
     if event.keysym == "Escape":
         stop_command_mode()
+        return
+
+    if event.keysym == "Return":
+        execute_command()
         return
 
     if event.keysym == "BackSpace":
@@ -260,6 +284,29 @@ canvas_command = scanline_canvas.create_text(
 current_screen = "main"
 selected_option = 0
 selected_game = 0
+screen_history = []
+
+def remember_current_screen():
+    if current_screen != "boot":
+        screen_history.append(current_screen)
+
+def go_back():
+    if not screen_history:
+        show_main_menu()
+        return
+
+    previous = screen_history.pop()
+
+    if previous == "main":
+        show_main_menu()
+    elif previous == "games":
+        show_game_library()
+    elif previous == "system":
+        show_system_info()
+    elif previous == "help":
+        show_command_help()
+    else:
+        show_main_menu()
 
 command_mode = False
 command_buffer = ""
@@ -318,14 +365,26 @@ def show_game_library():
     current_screen = "games"
     selected_game = 0
 
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="normal"
+    )
+
     set_title(
-    "====================================\n"
-    "          GAME LIBRARY\n"
-    "===================================="
-)
+        "====================================\n"
+        "          GAME LIBRARY\n"
+        "===================================="
+    )
 
     set_footer("↑↓ MOVE   ENTER RUN   ESC BACK")
+
     draw_game_library()
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        get_prompt_y()
+    )
 
 def draw_game_library():
 
@@ -452,6 +511,35 @@ def start_boot_sequence():
 
     show_line()
 
+def show_command_help():
+    global current_screen
+
+    current_screen = "help"
+
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="hidden"
+    )
+
+    set_title(
+        "====================================\n"
+        "          COMMAND HELP\n"
+        "===================================="
+    )
+
+    set_menu(
+        "AVAILABLE COMMANDS\n\n"
+        "HELP\n"
+        "GAMES\n"
+        "SYSINFO\n"
+        "CLEAR\n"
+        "BACK\n"
+        "REBOOT\n"
+        "SHUTDOWN"
+    )
+
+    set_footer("ESC BACK")
+
 def key_pressed(event):
 
     global selected_option, selected_game, command_mode
@@ -537,6 +625,11 @@ def key_pressed(event):
 
         if event.keysym == "Escape":
             show_main_menu()
+
+    elif current_screen == "help":
+
+        if event.keysym == "Escape":
+            go_back()
 
 def blink_cursor():
     current_text = scanline_canvas.itemcget(canvas_cursor, "text")
