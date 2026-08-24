@@ -230,8 +230,25 @@ def execute_command():
     elif command == "CLEAR":
         clear_current_screen()
 
+    elif command == "REBOOT":
+        reboot_terminal()
+
     else:
         show_temporary_status("UNKNOWN COMMAND")
+
+def reboot_terminal():
+    global command_mode, command_buffer, screen_history
+
+    command_mode = False
+    command_buffer = ""
+    screen_history = []
+
+    scanline_canvas.itemconfig(
+        canvas_command,
+        text=""
+    )
+
+    start_boot_sequence()
 
 def handle_command_input(event):
     global command_buffer
