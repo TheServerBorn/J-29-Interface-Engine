@@ -6,6 +6,46 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.19] - 2026-08-23
+
+### Added
+- Terminal command input mode
+- Dynamic command prompt positioning
+- Context-sensitive command mode footer guidance
+- Previous-screen navigation history
+- `HELP` command
+- `GAMES` command
+- `SYSINFO` command
+- `BACK` command
+- `CLEAR` command
+- `REBOOT` command
+- `SHUTDOWN` command
+- Unknown command handling
+
+### Changed
+- Typed commands now provide an alternate navigation path alongside menu controls
+- Command prompt position now follows the current screen content dynamically
+- Escape and `BACK` return to the previous screen when history is available
+- `REBOOT` restarts the J29 boot sequence without restarting the host system
+- `SHUTDOWN` exits J29 without shutting down the host system
+
+### Verified
+- HELP opens the command reference screen
+- GAMES opens the Game Library
+- SYSINFO opens System Info
+- BACK returns to the previous screen
+- CLEAR resets command/status state without changing screens
+- REBOOT clears command/history state and reruns the boot sequence
+- SHUTDOWN exits J29 cleanly
+- Invalid commands display `UNKNOWN COMMAND`
+- Temporary command status messages restore the correct footer
+- Command prompt and blinking cursor remain correctly positioned across screens
+- Menu and command navigation coexist correctly
+- Screen history works across menu and command navigation
+- Full v0.19 regression test passed
+
+---
+
 ## [0.18] - 2026-08-23
 
 ### Added
