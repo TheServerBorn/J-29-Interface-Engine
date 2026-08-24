@@ -377,11 +377,11 @@ Stable milestones are maintained through Git branches, commits, and GitHub relea
 ## Current Roadmap
 
 **v0.14 — Core Engine Separation** ✅  
-**v0.15 — Identity & Configuration** 🚧  
-**v0.16 — Theme System**  
-**v0.17 — First-Run Setup**  
-**v0.18 — Dynamic Footer**  
-**v0.19 — Terminal Command System**
+**v0.15 — Identity & Configuration** ✅  
+**v0.16 — Theme System**  ✅
+**v0.17 — First-Run Setup**  ✅
+**v0.18 — Dynamic Footer**  ✅
+**v0.19 — Terminal Command System**✅
 
 Further milestones are documented in `ROADMAP.md`.
 
