@@ -206,6 +206,7 @@ def execute_command():
         show_command_help()
 
     elif command == "GAMES":
+        remember_current_screen()
         show_game_library()
 
 def handle_command_input(event):
@@ -574,6 +575,7 @@ def key_pressed(event):
         elif event.keysym == "Return":
 
             if selected_option == 0:
+                remember_current_screen()
                 show_game_library()
 
             elif selected_option == 1:
@@ -619,7 +621,7 @@ def key_pressed(event):
                 show_temporary_status("PROGRAM NOT AVAILABLE")
 
         elif event.keysym == "Escape":
-            show_main_menu()
+            go_back()
 
     elif current_screen == "system":
 
