@@ -227,6 +227,9 @@ def execute_command():
     elif command == "BACK":
         go_back()
 
+    elif command == "CLEAR":
+        clear_current_screen()
+
     else:
         show_temporary_status("UNKNOWN COMMAND")
 
@@ -264,6 +267,26 @@ def update_footer():
     else:
         set_footer("")
 
+def clear_current_screen():
+
+    scanline_canvas.itemconfig(
+        canvas_command,
+        text=""
+    )
+
+    update_footer()
+
+    if current_screen == "main":
+        draw_main_menu()
+
+    elif current_screen == "games":
+        draw_game_library()
+
+    elif current_screen == "system":
+        show_system_info()
+
+    elif current_screen == "help":
+        show_command_help()
 
 def show_temporary_status(text, duration=5000):
 
