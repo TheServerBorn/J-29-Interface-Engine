@@ -201,6 +201,17 @@ def execute_command():
         text=""
     )
 
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="normal"
+    )
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        get_prompt_y()
+    )
+
     if command == "HELP":
         remember_current_screen()
         show_command_help()
@@ -215,6 +226,9 @@ def execute_command():
 
     elif command == "BACK":
         go_back()
+
+    else:
+        show_temporary_status("UNKNOWN COMMAND")
 
 def handle_command_input(event):
     global command_buffer
