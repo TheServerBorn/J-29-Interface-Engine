@@ -209,6 +209,10 @@ def execute_command():
         remember_current_screen()
         show_game_library()
 
+    elif command == "SYSINFO":
+        remember_current_screen()
+        show_system_info()
+
 def handle_command_input(event):
     global command_buffer
 
@@ -579,6 +583,7 @@ def key_pressed(event):
                 show_game_library()
 
             elif selected_option == 1:
+                remember_current_screen()
                 show_system_info()
 
             elif selected_option == 2:
@@ -626,7 +631,7 @@ def key_pressed(event):
     elif current_screen == "system":
 
         if event.keysym == "Escape":
-            show_main_menu()
+            go_back()
 
     elif current_screen == "help":
 
