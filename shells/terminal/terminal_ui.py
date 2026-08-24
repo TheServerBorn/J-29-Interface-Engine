@@ -233,6 +233,9 @@ def execute_command():
     elif command == "REBOOT":
         reboot_terminal()
 
+    elif command == "SHUTDOWN":
+        root.destroy()
+
     else:
         show_temporary_status("UNKNOWN COMMAND")
 
