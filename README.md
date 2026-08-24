@@ -376,7 +376,7 @@ Stable milestones are maintained through Git branches, commits, and GitHub relea
 
 ## Current Roadmap
 
-- **v0.20 — Filesystem-Style Library Browser**
+- **v0.20 — Filesystem-Style Library Browser** 🚧
 - **v0.21 — Game Metadata**
 - **v0.22 — Favorites**
 - **v0.23 — Recent Games**
