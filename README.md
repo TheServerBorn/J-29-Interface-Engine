@@ -376,12 +376,12 @@ Stable milestones are maintained through Git branches, commits, and GitHub relea
 
 ## Current Roadmap
 
-**v0.14 — Core Engine Separation** ✅  
-**v0.15 — Identity & Configuration** ✅  
-**v0.16 — Theme System**  ✅
-**v0.17 — First-Run Setup**  ✅
-**v0.18 — Dynamic Footer**  ✅
-**v0.19 — Terminal Command System**✅
+**v0.20 — Filesystem-Style Library Browser** 🚧
+**v0.21 — Game Metadata**
+**v0.22 — Favorites**
+**v0.23 — Recent Games**
+**v0.24 — Steam Support**
+**v0.25 — Emulator Support**
 
 Further milestones are documented in `ROADMAP.md`.
 
