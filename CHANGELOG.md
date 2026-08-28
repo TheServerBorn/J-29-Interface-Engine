@@ -6,6 +6,55 @@ The project currently uses small development versions so each stable milestone c
 
 ---
 
+## [0.20] - 2026-08-27
+
+### Added
+- Filesystem-style Game Library browser
+- Virtual `GAMES/` root directory
+- Virtual game folders using the `folder=` field in `games.ini`
+- Default `PROGRAMS` folder for game entries without a specified folder
+- Visible current library path
+- `DIR` command
+- `LS` command
+- `CD <DIRECTORY>` command
+- `CD ..` parent-directory navigation
+- `CD /` root-directory navigation
+- Context-sensitive Game Library footer guidance
+
+### Changed
+- Game Library now organizes programs into virtual directories instead of displaying a single flat list
+- Enter opens directories from `GAMES/`
+- Enter launches programs from inside a library directory
+- Escape moves up one directory before leaving the Game Library
+- `BACK` moves up one directory before leaving the Game Library
+- Game Library footer displays `ENTER OPEN` at the directory level and `ENTER RUN` inside a game folder
+- Library directories and programs are displayed in predictable alphabetical order
+- Existing `games.ini` entries without a `folder=` value remain compatible and are placed under `PROGRAMS`
+
+### Verified
+- `GAMES/` displays available virtual directories
+- Multiple library directories display correctly
+- Enter opens the selected directory
+- Programs display correctly inside their assigned directory
+- Enter launches a valid program from inside a library directory
+- Programs with unavailable paths display `PROGRAM NOT AVAILABLE`
+- Escape returns from a library directory to `GAMES/`
+- Escape returns from `GAMES/` to the previous screen
+- `DIR` opens or displays the Game Library
+- `LS` opens or displays the Game Library
+- `CD <DIRECTORY>` opens a valid library directory
+- `CD ..` returns to `GAMES/`
+- `CD /` returns to the `GAMES/` root
+- Invalid directory names display `DIRECTORY NOT FOUND`
+- `BACK` returns from a library directory to `GAMES/`
+- `BACK` returns from `GAMES/` to the previous screen
+- Context-sensitive footer guidance updates correctly between directory and program views
+- Existing System Info and Help Escape navigation remain functional
+- Existing v0.19 command navigation remains functional
+- Multi-directory library navigation tested successfully with DOS, SNES, and WINDOWS folders
+
+---
+
 ## [0.19] - 2026-08-23
 
 ### Added
