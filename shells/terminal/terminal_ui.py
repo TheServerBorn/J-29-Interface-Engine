@@ -766,6 +766,16 @@ def key_pressed(event):
             else:
                 go_back()
 
+    elif current_screen == "system":
+
+        if event.keysym == "Escape":
+            go_back()
+
+    elif current_screen == "help":
+
+        if event.keysym == "Escape":
+            go_back()
+
 def blink_cursor():
     current_text = scanline_canvas.itemcget(canvas_cursor, "text")
 
