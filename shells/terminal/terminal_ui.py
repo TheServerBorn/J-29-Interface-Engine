@@ -189,6 +189,76 @@ def stop_command_mode():
 
     update_footer()
 
+def change_directory(target):
+
+    target = target.strip().upper()
+
+    if not target:
+        show_temporary_status(
+            "USAGE: CD <DIRECTORY>",
+            duration=2000
+        )
+        return
+
+    # Enter the root of the virtual game filesystem.
+    if target in ("/", "GAMES", "GAMES/"):
+
+        if current_screen != "games":
+            remember_current_screen()
+
+        show_game_library()
+        return
+
+    # Move up from a library folder to GAMES/.
+    if target == "..":
+
+        if current_screen != "games":
+            remember_current_screen()
+
+        show_game_library()
+        return
+
+    # Open a valid library folder.
+    if target in library:
+
+        if current_screen != "games":
+            remember_current_screen()
+
+        show_game_library(target)
+        return
+
+    show_temporary_status(
+        "DIRECTORY NOT FOUND",
+        duration=2000
+    )
+
+def show_directory_listing():
+
+    if current_screen == "games":
+
+        draw_game_library()
+
+        if current_library_folder is None:
+            show_temporary_status(
+                "DIRECTORY: GAMES/",
+                duration=2000
+            )
+        else:
+            show_temporary_status(
+                f"DIRECTORY: GAMES/{current_library_folder}/",
+                duration=2000
+            )
+
+        return
+
+    remember_current_screen()
+    show_game_library()
+
+    show_temporary_status(
+        "DIRECTORY: GAMES/",
+        duration=2000
+    )
+
 def execute_command():
     global command_mode, command_buffer
 
@@ -221,12 +291,34 @@ def execute_command():
         remember_current_screen()
         show_game_library()
 
+    elif command == "DIR":
+        show_directory_listing()
+
+    elif command == "LS":
+        show_directory_listing()
+
+    elif command == "CD":
+        change_directory("")
+
+    elif command.startswith("CD "):
+        change_directory(
+            command[3:]
+        )
+
     elif command == "SYSINFO":
         remember_current_screen()
         show_system_info()
 
     elif command == "BACK":
-        go_back()
+
+        if (
+            current_screen == "games"
+            and current_library_folder is not None
+        ):
+            show_game_library()
+
+        else:
+            go_back()
 
     elif command == "CLEAR":
         clear_current_screen()
@@ -280,7 +372,15 @@ def update_footer():
         set_footer("↑↓ MOVE   ENTER SELECT")
 
     elif current_screen == "games":
-        set_footer("↑↓ MOVE   ENTER RUN   ESC BACK")
+
+        if current_library_folder is None:
+            set_footer(
+                "↑↓ MOVE   ENTER OPEN   ESC BACK"
+            )
+        else:
+            set_footer(
+                "↑↓ MOVE   ENTER RUN   ESC BACK"
+            )
 
     elif current_screen == "system":
         set_footer("ESC BACK")
@@ -356,6 +456,38 @@ screen_history = []
 def remember_current_screen():
     if current_screen != "boot":
         screen_history.append(current_screen)
+
+def go_back():
+
+    # If inside a library directory,
+    # BACK moves up to GAMES/ first.
+    if (
+        current_screen == "games"
+        and current_library_folder is not None
+    ):
+        show_game_library()
+        return
+
+    if not screen_history:
+        show_main_menu()
+        return
+
+    previous = screen_history.pop()
+
+    if previous == "main":
+        show_main_menu()
+
+    elif previous == "games":
+        show_game_library()
+
+    elif previous == "system":
+        show_system_info()
+
+    elif previous == "help":
+        show_command_help()
+
+    else:
+        show_main_menu()
 
 def go_back():
     if not screen_history:
@@ -446,9 +578,7 @@ def show_game_library(folder=None):
         "===================================="
     )
 
-    set_footer(
-        "↑↓ MOVE   ENTER OPEN/RUN   ESC BACK"
-    )
+    update_footer()
 
     draw_game_library()
 
@@ -644,6 +774,9 @@ def show_command_help():
         "AVAILABLE COMMANDS\n\n"
         "HELP\n"
         "GAMES\n"
+        "DIR\n"
+        "LS\n"
+        "CD <DIRECTORY>\n"
         "SYSINFO\n"
         "CLEAR\n"
         "BACK\n"
