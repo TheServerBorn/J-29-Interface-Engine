@@ -1,3 +1,4 @@
+from engine.library import build_library
 from engine.theme import load_theme
 from engine.games import load_games
 from engine.launcher import launch_program
@@ -13,7 +14,12 @@ from engine.system_info import (
 class J29Engine:
     def get_games(self):
         return load_games()
-
+    
+    def get_library(self):
+        return build_library(
+            self.get_games()
+        )
+    
     def launch_game(self, program_path):
         return launch_program(program_path)
 

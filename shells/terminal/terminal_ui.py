@@ -8,6 +8,7 @@ settings = engine.get_settings()
 theme = engine.get_theme()
 
 games = engine.get_games()
+library = engine.get_library()
 
 root = Tk()
 
@@ -349,6 +350,7 @@ canvas_command = scanline_canvas.create_text(
 current_screen = "main"
 selected_option = 0
 selected_game = 0
+current_library_folder = None
 screen_history = []
 
 def remember_current_screen():
@@ -423,12 +425,15 @@ def draw_main_menu():
 
     set_menu(menu_text)
 
-def show_game_library():
+def show_game_library(folder=None):
 
-    global current_screen, selected_game
+    global current_screen
+    global selected_game
+    global current_library_folder
 
     current_screen = "games"
     selected_game = 0
+    current_library_folder = folder
 
     scanline_canvas.itemconfig(
         canvas_cursor,
@@ -441,7 +446,9 @@ def show_game_library():
         "===================================="
     )
 
-    set_footer("↑↓ MOVE   ENTER RUN   ESC BACK")
+    set_footer(
+        "↑↓ MOVE   ENTER OPEN/RUN   ESC BACK"
+    )
 
     draw_game_library()
 
@@ -453,19 +460,60 @@ def show_game_library():
 
 def draw_game_library():
 
-    if not games:
-        set_menu("NO PROGRAMS AVAILABLE")
+    if not library:
+        set_menu(
+            "GAMES/\n\n"
+            "NO PROGRAMS AVAILABLE"
+        )
         return
 
     menu_text = ""
 
-    for i, game in enumerate(games):
+    # Root of the virtual filesystem
+    if current_library_folder is None:
 
-        if i == selected_game:
-            menu_text += "> " + game["name"] + "\n"
+        menu_text = "GAMES/\n\n"
+
+        folders = list(library.keys())
+
+        for i, folder in enumerate(folders):
+
+            if i == selected_game:
+                menu_text += (
+                    "> [DIR] " + folder + "\n"
+                )
+            else:
+                menu_text += (
+                    "  [DIR] " + folder + "\n"
+                )
+
+    # Inside a directory
+    else:
+
+        menu_text = (
+            f"GAMES/{current_library_folder}/\n\n"
+        )
+
+        folder_games = library.get(
+            current_library_folder,
+            []
+        )
+
+        if not folder_games:
+            menu_text += "NO PROGRAMS AVAILABLE"
+
         else:
-            menu_text += "  " + game["name"] + "\n"
 
+            for i, game in enumerate(folder_games):
+
+                if i == selected_game:
+                    menu_text += (
+                        "> " + game["name"] + "\n"
+                    )
+                else:
+                    menu_text += (
+                        "  " + game["name"] + "\n"
+                    )
 
     set_menu(menu_text)
 
@@ -651,52 +699,72 @@ def key_pressed(event):
 
     elif current_screen == "games":
 
+        if current_library_folder is None:
+            entries = list(library.keys())
+        else:
+            entries = library.get(
+                current_library_folder,
+                []
+            )
+
         if event.keysym == "Up":
 
-            if not games:
+            if not entries:
                 return
 
             selected_game -= 1
 
             if selected_game < 0:
-                selected_game = len(games) - 1
+                selected_game = len(entries) - 1
 
             draw_game_library()
 
         elif event.keysym == "Down":
 
-            if not games:
+            if not entries:
                 return
 
             selected_game += 1
 
-            if selected_game >= len(games):
+            if selected_game >= len(entries):
                 selected_game = 0
 
             draw_game_library()
 
         elif event.keysym == "Return":
 
-            if not games:
+            if not entries:
                 return
 
-            game_path = games[selected_game]["path"]
+            # Root directory:
+            # Enter opens a folder
+            if current_library_folder is None:
 
-            if not engine.launch_game(game_path):
-                show_temporary_status("PROGRAM NOT AVAILABLE")
+                folder = entries[selected_game]
+
+                show_game_library(folder)
+
+            # Inside a folder:
+            # Enter launches the selected game
+            else:
+
+                game = entries[selected_game]
+                game_path = game["path"]
+
+                if not engine.launch_game(game_path):
+                    show_temporary_status(
+                        "PROGRAM NOT AVAILABLE"
+                    )
 
         elif event.keysym == "Escape":
-            go_back()
 
-    elif current_screen == "system":
+            # If inside a folder, return to GAMES/
+            if current_library_folder is not None:
+                show_game_library()
 
-        if event.keysym == "Escape":
-            go_back()
-
-    elif current_screen == "help":
-
-        if event.keysym == "Escape":
-            go_back()
+            # If already at GAMES/, leave library
+            else:
+                go_back()
 
 def blink_cursor():
     current_text = scanline_canvas.itemcget(canvas_cursor, "text")
