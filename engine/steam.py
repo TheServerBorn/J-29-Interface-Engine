@@ -15,6 +15,24 @@ from pathlib import Path
 _MANIFEST_RE = re.compile(r"appmanifest_(\d+)\.acf$", re.IGNORECASE)
 _VDF_PAIR_RE = re.compile(r'^\s*"([^"]+)"\s+"([^"]*)"\s*$')
 
+# Steam installs a handful of support packages beside normal games. Keep the
+# filter deliberately conservative so J-29 does not hide legitimate software.
+_EXCLUDED_APP_IDS = {
+    "228980",  # Steamworks Common Redistributables
+}
+
+_EXCLUDED_EXACT_NAMES = {
+    "steamworks common redistributables",
+}
+
+
+def _is_non_game_manifest(app_id: str, name: str) -> bool:
+    """Return True only for Steam packages we explicitly know are not games."""
+    if app_id.strip() in _EXCLUDED_APP_IDS:
+        return True
+    return name.strip().casefold() in _EXCLUDED_EXACT_NAMES
+
+
 
 def _decode_vdf_path(value: str) -> str:
     # Valve's VDF files commonly escape Windows path separators.
@@ -162,6 +180,9 @@ def _game_from_manifest(manifest: Path) -> dict | None:
     install_dir = values.get("installdir", "").strip()
 
     if not app_id or not name:
+        return None
+
+    if _is_non_game_manifest(app_id, name):
         return None
 
     library_root = manifest.parent.parent
