@@ -489,24 +489,6 @@ def go_back():
     else:
         show_main_menu()
 
-def go_back():
-    if not screen_history:
-        show_main_menu()
-        return
-
-    previous = screen_history.pop()
-
-    if previous == "main":
-        show_main_menu()
-    elif previous == "games":
-        show_game_library()
-    elif previous == "system":
-        show_system_info()
-    elif previous == "help":
-        show_command_help()
-    else:
-        show_main_menu()
-
 command_mode = False
 command_buffer = ""
 
