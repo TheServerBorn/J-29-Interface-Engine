@@ -1154,12 +1154,7 @@ def key_pressed(event):
             if not selected_game_record:
                 return
 
-            game_path = selected_game_record.get("path", "")
-
-            if not engine.launch_game(
-                game_path,
-                selected_game_record.get("id")
-            ):
+            if not engine.launch_game(selected_game_record):
                 show_temporary_status(
                     "PROGRAM NOT AVAILABLE"
                 )

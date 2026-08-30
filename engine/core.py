@@ -1,8 +1,9 @@
 from engine.library import build_library
 from engine.theme import load_theme
 from engine.games import load_games
+from engine.steam import discover_steam_games
 from engine.game_state import load_game_state, save_game_state
-from engine.launcher import launch_program
+from engine.launcher import launch_program, launch_steam_app
 from engine.config import load_identity, load_settings
 from engine.system_info import (
     get_cpu_name,
@@ -14,7 +15,24 @@ from engine.system_info import (
 
 class J29Engine:
     def get_games(self):
-        return load_games()
+        configured_games = load_games()
+        steam_games = discover_steam_games()
+
+        # A manually configured Steam entry wins over auto-discovery so users
+        # can supply richer metadata without seeing a duplicate title.
+        configured_steam_ids = {
+            str(game.get("steam_id", "")).strip()
+            for game in configured_games
+            if game.get("steam_id")
+        }
+
+        auto_games = [
+            game
+            for game in steam_games
+            if game.get("steam_id") not in configured_steam_ids
+        ]
+
+        return configured_games + auto_games
     
     def get_library(self):
         return build_library(
@@ -71,11 +89,25 @@ class J29Engine:
         state["recent"] = recent
         save_game_state(state)
 
-    def launch_game(self, program_path, game_id=None):
-        launched = launch_program(program_path)
+    def launch_game(self, game):
+        if not game:
+            return False
 
-        if launched and game_id:
-            self.record_recent_game(game_id)
+        launch_type = str(game.get("launch_type", "EXECUTABLE")).upper()
+
+        if launch_type == "STEAM":
+            launched = launch_steam_app(game.get("steam_id"))
+        elif launch_type == "EXECUTABLE":
+            launched = launch_program(
+                game.get("executable_path") or game.get("path")
+            )
+        else:
+            # ROM/emulator dispatch belongs to v0.25. Unknown launch types
+            # fail safely instead of leaking platform logic into the shell.
+            launched = False
+
+        if launched and game.get("id"):
+            self.record_recent_game(game["id"])
 
         return launched
 
