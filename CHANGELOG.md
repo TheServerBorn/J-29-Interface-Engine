@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.25 — Emulator Support (READY FOR VALIDATION)
+
+### Added
+- Automatic ROM library discovery from configured ROM roots.
+- Platform inference from common ROM folder names.
+- Stable generated ROM IDs and normal J-29 metadata records.
+- Manual ROM entries override auto-discovered records with the same ROM path.
+- Conservative game-file filtering to avoid BIOS/artwork/save-file noise.
+- Automatic RetroArch core selection by platform through the `{core}` token.
+
+### Validation
+- SNES DOOM launch through RetroArch/Snes9x validated on Windows.
+- Fullscreen launch and return-to-J-29 state retention validated.
+- Automatic ROM discovery now requires real-library validation before v0.25 is COMPLETE.
+
+
 ## v0.23 — Recent Games (validation build)
 
 - Added persistent recent-game history to `config/game_state.json`.
@@ -538,3 +554,23 @@ This pivot was made early in development after the project expanded beyond its o
 ### Roadmap
 - v0.24 Steam Support is complete.
 - ROM/emulator dispatch remains reserved for v0.25 Emulator Support.
+
+
+## v0.25 — Emulator Support — READY FOR VALIDATION
+
+### Added
+- Cross-platform emulator profile configuration in `config/emulators.ini`.
+- Engine-level ROM launch dispatch.
+- Explicit per-game emulator profile selection.
+- Automatic platform-to-emulator profile matching when no emulator is specified.
+- Per-OS emulator executable configuration for Windows, Linux, and macOS.
+- Configurable emulator argument templates using `{rom}`.
+- Initial example profiles for RetroArch, Dolphin, PCSX2, and PPSSPP.
+
+### Architecture
+- Emulator-specific behavior remains in the engine layer.
+- Terminal and future shells launch ROM records without knowing emulator command lines.
+- Missing ROMs, profiles, or emulator executables fail safely instead of crashing J-29.
+
+### Validation
+- Awaiting validation against a real emulator and ROM before v0.25 is marked complete.

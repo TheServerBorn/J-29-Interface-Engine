@@ -1,9 +1,13 @@
+from pathlib import Path
+
 from engine.library import build_library
 from engine.theme import load_theme
 from engine.games import load_games
 from engine.steam import discover_steam_games
+from engine.roms import discover_rom_games
 from engine.game_state import load_game_state, save_game_state
 from engine.launcher import launch_program, launch_steam_app
+from engine.emulators import launch_rom
 from engine.config import load_identity, load_settings
 from engine.system_info import (
     get_cpu_name,
@@ -17,22 +21,43 @@ class J29Engine:
     def get_games(self):
         configured_games = load_games()
         steam_games = discover_steam_games()
+        rom_games = discover_rom_games()
 
-        # A manually configured Steam entry wins over auto-discovery so users
-        # can supply richer metadata without seeing a duplicate title.
+        # Manually configured integration records win over discovery so users
+        # can add richer metadata without creating duplicate library entries.
         configured_steam_ids = {
             str(game.get("steam_id", "")).strip()
             for game in configured_games
             if game.get("steam_id")
         }
 
-        auto_games = [
+        def normalized_path(value):
+            try:
+                return str(Path(str(value)).expanduser().resolve()).casefold()
+            except (OSError, TypeError, ValueError):
+                return str(value or "").strip().casefold()
+
+        configured_rom_paths = {
+            normalized_path(game.get("rom_path") or game.get("path"))
+            for game in configured_games
+            if str(game.get("launch_type", "")).upper() == "ROM"
+            and (game.get("rom_path") or game.get("path"))
+        }
+
+        auto_steam_games = [
             game
             for game in steam_games
             if game.get("steam_id") not in configured_steam_ids
         ]
 
-        return configured_games + auto_games
+        auto_rom_games = [
+            game
+            for game in rom_games
+            if normalized_path(game.get("rom_path") or game.get("path"))
+            not in configured_rom_paths
+        ]
+
+        return configured_games + auto_steam_games + auto_rom_games
     
     def get_library(self):
         return build_library(
@@ -101,9 +126,9 @@ class J29Engine:
             launched = launch_program(
                 game.get("executable_path") or game.get("path")
             )
+        elif launch_type == "ROM":
+            launched = launch_rom(game)
         else:
-            # ROM/emulator dispatch belongs to v0.25. Unknown launch types
-            # fail safely instead of leaking platform logic into the shell.
             launched = False
 
         if launched and game.get("id"):
