@@ -382,6 +382,9 @@ def update_footer():
                 "↑↓ MOVE   ENTER RUN   ESC BACK"
             )
 
+    elif current_screen == "game_details":
+        set_footer("ENTER RUN   ESC BACK")
+
     elif current_screen == "system":
         set_footer("ESC BACK")
 
@@ -402,6 +405,10 @@ def clear_current_screen():
 
     elif current_screen == "games":
         draw_game_library()
+
+    elif current_screen == "game_details":
+        if selected_game_record:
+            show_game_details(selected_game_record)
 
     elif current_screen == "system":
         show_system_info()
@@ -451,6 +458,9 @@ current_screen = "main"
 selected_option = 0
 selected_game = 0
 current_library_folder = None
+selected_game_record = None
+detail_parent_folder = None
+detail_parent_index = 0
 screen_history = []
 
 def remember_current_screen():
@@ -458,6 +468,10 @@ def remember_current_screen():
         screen_history.append(current_screen)
 
 def go_back():
+
+    if current_screen == "game_details":
+        return_to_game_library()
+        return
 
     # If inside a library directory,
     # BACK moves up to GAMES/ first.
@@ -486,24 +500,6 @@ def go_back():
     elif previous == "help":
         show_command_help()
 
-    else:
-        show_main_menu()
-
-def go_back():
-    if not screen_history:
-        show_main_menu()
-        return
-
-    previous = screen_history.pop()
-
-    if previous == "main":
-        show_main_menu()
-    elif previous == "games":
-        show_game_library()
-    elif previous == "system":
-        show_system_info()
-    elif previous == "help":
-        show_command_help()
     else:
         show_main_menu()
 
@@ -648,6 +644,75 @@ def draw_game_library():
     set_menu(menu_text)
 
 
+def _metadata_value(value):
+    if value is None or value == "":
+        return "UNKNOWN"
+    return str(value)
+
+def show_game_details(game):
+    global current_screen
+    global selected_game_record
+
+    current_screen = "game_details"
+    selected_game_record = game
+
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="hidden"
+    )
+
+    set_title(
+        "====================================\n"
+        "        PROGRAM INFORMATION\n"
+        "===================================="
+    )
+
+    year = _metadata_value(game.get("year"))
+    genre = _metadata_value(game.get("genre"))
+    developer = _metadata_value(game.get("developer"))
+    publisher = _metadata_value(game.get("publisher"))
+    platform = _metadata_value(game.get("platform"))
+    launch_type = _metadata_value(game.get("launch_type"))
+
+    favorite = "YES" if game.get("favorite") else "NO"
+
+    extra_lines = ""
+
+    if game.get("emulator"):
+        extra_lines += f"EMULATOR ........ {game['emulator']}\n"
+
+    if game.get("steam_id"):
+        extra_lines += f"STEAM ID ........ {game['steam_id']}\n"
+
+    set_menu(
+        f"TITLE ........... {game.get('title') or game.get('name')}\n"
+        f"PLATFORM ........ {platform}\n"
+        f"YEAR ............ {year}\n"
+        f"GENRE ........... {genre}\n"
+        f"DEVELOPER ....... {developer}\n"
+        f"PUBLISHER ....... {publisher}\n"
+        f"LAUNCH TYPE ..... {launch_type}\n"
+        f"FAVORITE ........ {favorite}\n"
+        f"{extra_lines}"
+    )
+
+    update_footer()
+
+def return_to_game_library():
+    global selected_game
+
+    folder = detail_parent_folder
+    index = detail_parent_index
+
+    show_game_library(folder)
+
+    entries = library.get(folder, []) if folder else list(library.keys())
+
+    if entries:
+        selected_game = min(index, len(entries) - 1)
+        draw_game_library()
+
+
 def show_system_info():
 
     global current_screen
@@ -789,6 +854,7 @@ def show_command_help():
 def key_pressed(event):
 
     global selected_option, selected_game, command_mode
+    global detail_parent_folder, detail_parent_index
 
     if command_mode:
         handle_command_input(event)
@@ -878,16 +944,14 @@ def key_pressed(event):
                 show_game_library(folder)
 
             # Inside a folder:
-            # Enter launches the selected game
+            # Enter opens the program metadata screen.
+            # The details screen owns the explicit RUN action.
             else:
 
                 game = entries[selected_game]
-                game_path = game["path"]
-
-                if not engine.launch_game(game_path):
-                    show_temporary_status(
-                        "PROGRAM NOT AVAILABLE"
-                    )
+                detail_parent_folder = current_library_folder
+                detail_parent_index = selected_game
+                show_game_details(game)
 
         elif event.keysym == "Escape":
 
@@ -898,6 +962,22 @@ def key_pressed(event):
             # If already at GAMES/, leave library
             else:
                 go_back()
+
+    elif current_screen == "game_details":
+
+        if event.keysym == "Return":
+            if not selected_game_record:
+                return
+
+            game_path = selected_game_record.get("path", "")
+
+            if not engine.launch_game(game_path):
+                show_temporary_status(
+                    "PROGRAM NOT AVAILABLE"
+                )
+
+        elif event.keysym == "Escape":
+            return_to_game_library()
 
     elif current_screen == "system":
 

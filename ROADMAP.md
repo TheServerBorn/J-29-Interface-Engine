@@ -287,18 +287,28 @@ Navigation will support:
 
 Replace simple name/path entries with structured game information.
 
-Possible metadata:
+Implemented metadata foundation:
 
+- Stable game ID from INI section
 - Title
 - Platform
 - Release year
 - Genre
+- Developer
+- Publisher
 - Launch type
 - Executable path
 - ROM path
-- Emulator
+- Emulator/profile identifier
 - Steam ID
 - Favorite status
+- Backwards compatibility with existing name/path/folder entries
+
+Next v0.21 work:
+
+- Metadata detail view in the Terminal shell
+- Metadata-aware launch routing
+- Validation/fallback behavior for incomplete entries
 
 ---
 
