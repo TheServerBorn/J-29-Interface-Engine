@@ -1,3 +1,23 @@
+## v0.25.1 — Centered Long-List Scrolling Fix
+
+### Fixed
+- Long lists now scroll around the selected cursor instead of waiting for the
+  cursor to reach the bottom of the visible page.
+- The selected game remains approximately centered vertically whenever possible.
+- Increased footer safety margin prevents list entries from rendering beneath
+  the navigation/help bar.
+- Beginning and end of a list clamp naturally while still keeping the selected
+  item visible.
+
+## v0.25.1 — Long List Scrolling
+
+### Fixed
+- Long Game Library folders now automatically scroll as the selection moves.
+- The selected item always remains visible when navigating with Up/Down.
+- Favorites and Recent Games use the same scrolling behavior.
+- Visible range indicators show the current portion of a long list.
+- List capacity adapts to the current terminal window height.
+
 # Changelog
 
 ## v0.25 — Emulator Support — COMPLETE

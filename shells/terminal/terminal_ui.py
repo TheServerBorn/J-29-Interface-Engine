@@ -613,6 +613,57 @@ def show_game_library(folder=None):
         get_prompt_y()
     )
 
+
+def _list_capacity(header_lines=0):
+    """Return a safe number of list rows that will never overlap the footer."""
+    height = root.winfo_height()
+    if height < 300:
+        height = 500
+
+    # The menu begins below the title/header area.
+    menu_top = 165
+
+    # Reserve substantially more room than the footer text itself because
+    # Tk text baselines/font metrics can extend below the nominal y position.
+    footer_reserve = 120
+    usable_bottom = height - footer_reserve
+
+    available = max(100, usable_bottom - menu_top)
+
+    # MENU_FONT_SIZE is the configured nominal size; add generous line spacing
+    # so the final visible row stays comfortably clear of the help bar.
+    line_height = max(MENU_FONT_SIZE + 8, 22)
+    total_lines = max(4, int(available / line_height))
+
+    return max(3, total_lines - header_lines)
+
+
+def _visible_list_window(entries, selected_index, capacity):
+    """Center the selected entry whenever possible."""
+    count = len(entries)
+
+    if count <= capacity:
+        return 0, count
+
+    selected_index = max(0, min(selected_index, count - 1))
+
+    # Keep the cursor near the vertical center of the screen.
+    half = capacity // 2
+    start = selected_index - half
+
+    # Clamp at the beginning/end while keeping a full window.
+    start = max(0, min(start, count - capacity))
+    end = start + capacity
+
+    return start, end
+
+
+def _range_status(start, end, total):
+    if total <= 0:
+        return ""
+    return f"[{start + 1}-{end} OF {total}]"
+
+
 def draw_game_library():
 
     if not library:
@@ -622,53 +673,54 @@ def draw_game_library():
         )
         return
 
-    menu_text = ""
-
     # Root of the virtual filesystem
     if current_library_folder is None:
-
-        menu_text = "GAMES/\n\n"
-
         folders = list(library.keys())
+        capacity = _list_capacity(header_lines=2)
+        start, end = _visible_list_window(
+            folders,
+            selected_game,
+            capacity
+        )
 
-        for i, folder in enumerate(folders):
+        menu_text = (
+            f"GAMES/ {_range_status(start, end, len(folders))}\n\n"
+        )
 
-            if i == selected_game:
-                menu_text += (
-                    "> [DIR] " + folder + "\n"
-                )
-            else:
-                menu_text += (
-                    "  [DIR] " + folder + "\n"
-                )
+        for i in range(start, end):
+            folder = folders[i]
+            marker = "> " if i == selected_game else "  "
+            menu_text += f"{marker}[DIR] {folder}\n"
 
     # Inside a directory
     else:
-
-        menu_text = (
-            f"GAMES/{current_library_folder}/\n\n"
-        )
-
         folder_games = library.get(
             current_library_folder,
             []
         )
 
         if not folder_games:
-            menu_text += "NO PROGRAMS AVAILABLE"
-
+            menu_text = (
+                f"GAMES/{current_library_folder}/\n\n"
+                "NO PROGRAMS AVAILABLE"
+            )
         else:
+            capacity = _list_capacity(header_lines=2)
+            start, end = _visible_list_window(
+                folder_games,
+                selected_game,
+                capacity
+            )
 
-            for i, game in enumerate(folder_games):
+            menu_text = (
+                f"GAMES/{current_library_folder}/ "
+                f"{_range_status(start, end, len(folder_games))}\n\n"
+            )
 
-                if i == selected_game:
-                    menu_text += (
-                        "> " + game["name"] + "\n"
-                    )
-                else:
-                    menu_text += (
-                        "  " + game["name"] + "\n"
-                    )
+            for i in range(start, end):
+                game = folder_games[i]
+                marker = "> " if i == selected_game else "  "
+                menu_text += marker + game["name"] + "\n"
 
     set_menu(menu_text)
 
@@ -805,9 +857,17 @@ def draw_favorites():
         )
         return
 
-    menu_text = ""
+    capacity = _list_capacity(header_lines=1)
+    start, end = _visible_list_window(
+        favorite_games,
+        selected_game,
+        capacity
+    )
 
-    for i, game in enumerate(favorite_games):
+    menu_text = f"FAVORITES {_range_status(start, end, len(favorite_games))}\n\n"
+
+    for i in range(start, end):
+        game = favorite_games[i]
         marker = "> " if i == selected_game else "  "
         menu_text += marker + game["name"] + "\n"
 
@@ -862,9 +922,17 @@ def draw_recent():
         )
         return
 
-    menu_text = ""
+    capacity = _list_capacity(header_lines=1)
+    start, end = _visible_list_window(
+        recent_games,
+        selected_game,
+        capacity
+    )
 
-    for i, game in enumerate(recent_games):
+    menu_text = f"RECENT {_range_status(start, end, len(recent_games))}\n\n"
+
+    for i in range(start, end):
+        game = recent_games[i]
         marker = "> " if i == selected_game else "  "
         menu_text += marker + game["name"] + "\n"
 
