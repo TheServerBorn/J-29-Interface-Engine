@@ -1,6 +1,18 @@
 # Changelog
 
-## v0.21 — Game Metadata (development)
+## v0.22 — Favorites (validation build)
+
+- Added persistent favorite state in `config/game_state.json`.
+- Added engine methods to list, inspect, add, and remove favorites by stable game ID.
+- Added FAVORITES to the Terminal Shell main menu.
+- Added `FAVORITES` and `FAV` commands.
+- Added `F` favorite toggle on the Program Information screen.
+- Added direct `F` removal from the Favorites view.
+- Favorites use the existing v0.21 Program Information screen before launch.
+- Returning from Program Information preserves the Favorites selection.
+- Kept Recent Games out of v0.22 so roadmap milestones remain isolated.
+
+## v0.21 — Game Metadata
 
 - Added structured game metadata records in `engine/games.py`.
 - Preserved backwards compatibility with existing `name`, `path`, and `folder` entries.
