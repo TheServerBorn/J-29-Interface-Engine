@@ -498,7 +498,14 @@ def draw_media_prompt():
         )
     else:
         count = pending_media.get("candidate_count", 0)
-        if count > 1:
+        metadata = pending_media.get("metadata") or {}
+
+        if metadata and not metadata.get("valid", True):
+            detail = metadata.get("reason", "INVALID J-29 MEDIA METADATA")
+            resolved_rom = metadata.get("resolved_rom")
+            if resolved_rom:
+                detail += f"\n\nEXPECTED:\n{resolved_rom}"
+        elif count > 1:
             detail = f"{count} PROGRAM FILES DETECTED"
         else:
             detail = "NO RECOGNIZED PROGRAM"
@@ -631,7 +638,13 @@ def launch_pending_media():
         return
 
     def media_launch_failed():
-        # Return to the media prompt so the error is meaningful in context.
+        global current_screen
+
+        # launch_game_with_transition() changes the screen to "launching".
+        # On failure we must restore the actual media-prompt state, not only
+        # redraw its text. Otherwise key_pressed() continues treating the
+        # Terminal as "launching" and ignores ESC/N.
+        current_screen = "media_prompt"
         draw_media_prompt()
         show_temporary_status(
             engine.get_last_launch_error()

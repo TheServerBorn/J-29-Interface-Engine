@@ -1,3 +1,4 @@
+import configparser
 import ctypes
 import hashlib
 import os
@@ -6,6 +7,107 @@ import string
 from pathlib import Path
 
 
+
+# J-29 removable-media metadata format introduced in v0.27.
+MEDIA_METADATA_FILENAME = "j29-media.ini"
+
+def _media_descriptor_id(volume, title, rom_path):
+    import hashlib
+    seed = f"{volume}|{title}|{rom_path}".casefold()
+    return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:12].upper()
+
+def read_media_metadata(volume):
+    volume = Path(volume)
+    descriptor = volume / MEDIA_METADATA_FILENAME
+    if not descriptor.is_file():
+        return None
+    parser = configparser.ConfigParser()
+    try:
+        parser.read(descriptor, encoding="utf-8")
+    except (OSError, configparser.Error):
+        return {"valid": False, "reason": "INVALID MEDIA METADATA"}
+    if not parser.has_section("J29_MEDIA"):
+        return {"valid": False, "reason": "J29_MEDIA SECTION NOT FOUND"}
+
+    section = parser["J29_MEDIA"]
+    media_type = section.get("type", "GAME").strip().upper()
+    title = section.get("title", "").strip()
+    platform_name = section.get("platform", "").strip().upper()
+    game_id = section.get("game_id", "").strip()
+    rom_value = section.get("rom", "").strip()
+
+    if media_type != "GAME":
+        return {"valid": False, "reason": f"UNSUPPORTED MEDIA TYPE: {media_type}"}
+
+    # Launch-key mode: the physical medium represents an existing J-29
+    # library entry. This intentionally takes precedence if both fields exist.
+    if game_id:
+        game = {
+            "id": "MEDIAKEY_" + _media_descriptor_id(volume, title or game_id, game_id),
+            "name": title or game_id,
+            "title": title or game_id,
+            "folder": platform_name or "MEDIA",
+            "platform": platform_name,
+            "launch_type": "LIBRARY",
+            "target_game_id": game_id,
+            "favorite": False,
+            "source": "PHYSICAL_MEDIA",
+            "media_metadata": str(descriptor),
+        }
+        return {
+            "valid": True,
+            "type": media_type,
+            "mode": "LAUNCH_KEY",
+            "game": game,
+        }
+
+    if not title or not rom_value:
+        return {
+            "valid": False,
+            "reason": "MEDIA METADATA REQUIRES GAME_ID OR TITLE AND ROM",
+        }
+
+    # Metadata files may be authored on a different OS, so accept either
+    # slash style instead of interpreting the raw string as an OS-native Path.
+    rom_parts = [part for part in rom_value.replace("\\", "/").split("/") if part]
+    rom_path = volume.joinpath(*rom_parts).resolve()
+    volume_resolved = volume.resolve()
+
+    try:
+        rom_path.relative_to(volume_resolved)
+    except ValueError:
+        return {
+            "valid": False,
+            "reason": "MEDIA ROM PATH OUTSIDE VOLUME",
+            "requested_rom": rom_value,
+            "resolved_rom": str(rom_path),
+        }
+
+    if not rom_path.is_file():
+        return {
+            "valid": False,
+            "reason": "MEDIA ROM NOT FOUND",
+            "requested_rom": rom_value,
+            "resolved_rom": str(rom_path),
+        }
+
+    if not platform_name:
+        platform_name = _platform_from_path(rom_path, volume) or "UNKNOWN"
+
+    game = {
+        "id": "MEDIA_" + _media_descriptor_id(volume, title, rom_path),
+        "name": title, "title": title, "folder": platform_name,
+        "platform": platform_name, "launch_type": "ROM",
+        "rom_path": str(rom_path), "path": str(rom_path),
+        "favorite": False, "source": "PHYSICAL_MEDIA",
+        "media_metadata": str(descriptor),
+    }
+    return {
+        "valid": True,
+        "type": media_type,
+        "mode": "SELF_CONTAINED",
+        "game": game,
+    }
 
 # Keep v0.26 deliberately conservative. v0.27 will introduce the formal
 # J-29 media metadata/container format.
@@ -299,8 +401,20 @@ def _candidate_files(volume_root, max_files=2000):
 
 
 def inspect_media(volume_root):
-    """Return a v0.26 media descriptor for a mounted volume."""
+    """Return a physical-media descriptor for a mounted volume."""
     volume_root = Path(volume_root)
+
+    metadata = read_media_metadata(volume_root)
+    if metadata is not None:
+        return {
+            "volume": str(volume_root),
+            "volume_name": volume_root.name or str(volume_root),
+            "candidate_count": 1 if metadata.get("valid") else 0,
+            "game": metadata.get("game"),
+            "metadata": metadata,
+            "detection_method": "J29_METADATA",
+        }
+
     candidates = _candidate_files(volume_root)
 
     descriptor = {

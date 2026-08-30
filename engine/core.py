@@ -131,6 +131,28 @@ class J29Engine:
 
         launch_type = str(game.get("launch_type", "EXECUTABLE")).upper()
 
+        if launch_type == "LIBRARY":
+            target_game_id = str(game.get("target_game_id", "")).strip()
+            target = next(
+                (
+                    candidate
+                    for candidate in self.get_games()
+                    if str(candidate.get("id", "")).strip() == target_game_id
+                ),
+                None,
+            )
+            if not target:
+                self._last_launch_error = (
+                    f"LIBRARY GAME NOT FOUND: {target_game_id}"
+                    if target_game_id
+                    else "LIBRARY GAME ID NOT PROVIDED"
+                )
+                return False
+
+            # Hand the request back to the normal J-29 launcher pipeline.
+            # The resolved target determines Steam/ROM/executable behavior.
+            return self.launch_game(target)
+
         if launch_type == "STEAM":
             launched = launch_steam_app(game.get("steam_id"))
             if not launched:
