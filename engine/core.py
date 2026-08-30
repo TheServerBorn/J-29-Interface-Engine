@@ -9,6 +9,7 @@ from engine.game_state import load_game_state, save_game_state
 from engine.launcher import launch_program, launch_steam_app
 from engine.emulators import launch_rom_with_status
 from engine.config import load_identity, load_settings
+from engine.media import MediaMonitor, inspect_media
 from engine.system_info import (
     get_cpu_name,
     get_memory_gb,
@@ -20,6 +21,7 @@ from engine.system_info import (
 class J29Engine:
     def __init__(self):
         self._last_launch_error = ""
+        self._media_monitor = MediaMonitor()
 
     def get_last_launch_error(self):
         return self._last_launch_error
@@ -151,6 +153,16 @@ class J29Engine:
             self.record_recent_game(game["id"])
 
         return launched
+
+    def poll_media_events(self):
+        return self._media_monitor.poll()
+
+    def poll_inserted_media(self):
+        # Backward-compatible helper for the initial v0.26 shell checkpoint.
+        return self.poll_media_events()["inserted"]
+
+    def inspect_media(self, volume):
+        return inspect_media(volume)
 
     def get_system_info(self):
         storage = get_storage_info()

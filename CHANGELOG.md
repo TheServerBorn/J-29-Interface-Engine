@@ -1,62 +1,147 @@
-## v0.25.1 — Centered Long-List Scrolling Fix
-
-### Fixed
-- Long lists now scroll around the selected cursor instead of waiting for the
-  cursor to reach the bottom of the visible page.
-- The selected game remains approximately centered vertically whenever possible.
-- Increased footer safety margin prevents list entries from rendering beneath
-  the navigation/help bar.
-- Beginning and end of a list clamp naturally while still keeping the selected
-  item visible.
-
-## v0.25.1 — Long List Scrolling
-
-### Fixed
-- Long Game Library folders now automatically scroll as the selection moves.
-- The selected item always remains visible when navigating with Up/Down.
-- Favorites and Recent Games use the same scrolling behavior.
-- Visible range indicators show the current portion of a long list.
-- List capacity adapts to the current terminal window height.
-
 # Changelog
+
+## v0.26.1 — Universal Launch Transition — COMPLETE
+
+### Improved
+- Added one shared launch-transition experience for Steam games, local ROMs,
+  physical-media ROMs, configured executables, Favorites, and Recent Games.
+- J-29 now acknowledges RUN immediately with a dedicated
+  `LAUNCHING PROGRAM... / PLEASE WAIT` screen while Steam or an emulator starts.
+- The correct J-29 context is restored behind the external application so the
+  user returns to the expected screen when the game exits.
+- Terminal navigation is ignored during the brief external-program handoff.
+- Failed launches restore context and continue to show the existing diagnostic
+  launch error.
+
+### Validation
+- Universal launch transition validated successfully after v0.26 hardware
+  validation.
+- Launch behavior confirmed substantially cleaner than exposing the previous
+  menu during emulator or Steam startup latency.
+
+---
+
+## v0.26 — Physical Media System — COMPLETE
+
+### Added
+- Cross-platform physical-media detection foundation for removable media.
+- Runtime insertion and removal monitoring.
+- Automatic recognition of single-ROM removable media.
+- `MEDIA DETECTED` / `LOAD GAME? [Y/N]` terminal prompt.
+- Physical-media ROMs launch through the existing emulator pipeline.
+- Multiple simultaneous insertion events are queued safely.
+- Duplicate insertion events for the same mounted media are ignored.
+- Reinsertion after removal is treated as a fresh media event.
+
+### Windows Integration
+- Windows mounted-volume discovery supports removable media and USB storage
+  devices that may report as fixed disks.
+- Empty USB/SD reader slots are ignored rather than treated as mounted media.
+- Mounted-media identity uses volume information rather than drive letter alone,
+  allowing SD-card readers that retain the same drive letter to work correctly.
+- Fixed Terminal startup so the recurring physical-media polling chain actually
+  begins when the UI launches.
+
+### Safety
+- Removing media while `LOAD GAME?` is displayed cancels the prompt cleanly.
+- Queued entries for removed media are discarded.
+- J-29 verifies media still exists before attempting a launch.
+- Removal events are nonfatal and display `MEDIA REMOVED`.
+
+### Real Hardware Validation
+- SD card inserted into an already-connected USB reader: PASS.
+- Full USB reader removal: PASS.
+- `MEDIA REMOVED` notification: PASS.
+- Full reader reinsertion with fresh detection prompt: PASS.
+- Removal while the load prompt is open: PASS.
+- Physical-media ROM launch through RetroArch: PASS.
+- Repeated remove / insert / load / launch cycles: PASS.
+
+---
+
+## v0.25.1 — Long-List Scrolling Polish — COMPLETE
+
+### Improved
+- Added centered scrolling for long Game Library lists.
+- Selected entries stay visible and approximately centered during navigation.
+- Added stronger footer/bottom-screen safety.
+- Applied the same behavior to Game Library, Favorites, and Recent Games.
+- Visible range handling adapts to long lists without allowing entries to render
+  beneath the navigation/help bar.
+
+### Validation
+- Real UI validation passed; long lists no longer disappear beneath the footer.
+
+---
 
 ## v0.25 — Emulator Support — COMPLETE
 
 ### Added
-- Automatic ROM library discovery from configured ROM roots.
-- Platform inference from common ROM folder names.
-- Stable generated ROM IDs and normal J-29 metadata records.
-- Manual ROM entries override auto-discovered records with the same ROM path.
-- Conservative game-file filtering to avoid artwork/save-file noise.
-- Automatic RetroArch core selection by platform.
-- Installed-core detection with ordered fallback candidates.
-- Expanded fallback coverage across supported classic systems.
-- Visible diagnostics for missing cores, missing emulators, and unsupported profiles.
-- Standalone emulator auto-detection foundation for PCSX2, RPCS3, Dolphin, and PPSSPP.
-- Common Windows, Linux, and macOS executable lookup paths plus PATH lookup.
+- Emulator profiles and automatic ROM launching through configured emulators.
+- Cross-platform emulator configuration foundation.
+- Automatic ROM-library discovery from configured folders.
+- Stable generated IDs for discovered ROMs.
+- Manual game records override automatically discovered ROMs with the same path.
+- RetroArch core selection based on platform and installed cores.
+- Ordered core fallback lists for supported platforms.
+- Clear visible launch diagnostics when a required emulator/core is unavailable.
+- Standalone emulator auto-detection foundation for:
+  - PCSX2
+  - RPCS3
+  - Dolphin
+  - PPSSPP
+- Dedicated standalone emulator priority where appropriate, with RetroArch used
+  for supported systems.
 
-### Real-World Validation
-- Automatic ROM discovery validated against the active ROM library.
-- SNES launch validated.
-- NES launch validated.
-- Nintendo 64 launch validated.
-- GBA launch validated.
-- GBC launch validated.
-- Sega Genesis launch validated.
-- Return-to-J-29 state retention validated after emulator exit.
-- Multiple SNES titles validated.
-- Manual DOOM entry removed from `games.ini`; DOOM continued to appear and launch through automatic discovery.
+### Real Hardware Validation
+- SNES: PASS.
+- NES: PASS.
+- Nintendo 64: PASS.
+- Game Boy Advance: PASS.
+- Game Boy Color: PASS.
+- Sega Genesis: PASS.
+- RetroArch fullscreen launch and return to J-29 metadata screen: PASS.
+- Standalone PCSX2/RPCS3/Dolphin/PPSSPP real-world testing deferred to the final
+  release-candidate regression because matching local test cases were not
+  available during v0.25.
 
-### Deferred Release-Candidate Revalidation
-- PCSX2 / PS2
-- RPCS3 / PS3
-- Dolphin / GameCube and Wii
-- PPSSPP / PSP
+---
 
-These standalone paths are implemented and synthetic-tested but were not field-tested during v0.25 because matching emulator/ROM test assets were not available. They must be included in the final release-candidate regression where supported test media is available. Any remaining unsupported platform must be documented explicitly.
+## v0.24 — Steam Support — COMPLETE
 
+### Added
+- Cross-platform Steam installation discovery.
+- Windows Steam discovery through registry locations and common install paths.
+- macOS Steam discovery through the standard Application Support location.
+- Linux Steam discovery through standard and Flatpak locations.
+- Additional Steam libraries discovered through `libraryfolders.vdf`.
+- Installed games discovered through Steam `appmanifest_*.acf` files.
+- Steam games converted into normal J-29 game records with:
+  - stable `STEAM_<appid>` IDs
+  - Steam folder/category
+  - PC platform
+  - Steam launch type
+  - Steam App ID
+  - install path metadata
+- Manual configured games with the same Steam App ID take priority over
+  automatically discovered Steam records.
+- Cross-platform Steam URI launching.
+- Windows uses the native URI handler.
+- macOS uses `open`.
+- Linux uses `xdg-open`, with browser fallback where needed.
+- Steamworks Common Redistributables is filtered from the user-facing library.
 
+### Real Hardware Validation
+- Steam library auto-populated successfully on Windows.
+- Multiple real Steam titles were detected automatically.
+- Three different Steam games launched successfully.
+- Fullscreen game launch behavior validated.
+- Exiting a Steam game returned cleanly to the J-29 metadata screen.
+- Steamworks Common Redistributables filtering validated successfully.
 
+---
+
+---
 ## v0.23 — Recent Games (validation build)
 
 - Added persistent recent-game history to `config/game_state.json`.
@@ -595,23 +680,3 @@ This pivot was made early in development after the project expanded beyond its o
 ### Roadmap
 - v0.24 Steam Support is complete.
 - ROM/emulator dispatch remains reserved for v0.25 Emulator Support.
-
-
-## v0.25 — Emulator Support — READY FOR VALIDATION
-
-### Added
-- Cross-platform emulator profile configuration in `config/emulators.ini`.
-- Engine-level ROM launch dispatch.
-- Explicit per-game emulator profile selection.
-- Automatic platform-to-emulator profile matching when no emulator is specified.
-- Per-OS emulator executable configuration for Windows, Linux, and macOS.
-- Configurable emulator argument templates using `{rom}`.
-- Initial example profiles for RetroArch, Dolphin, PCSX2, and PPSSPP.
-
-### Architecture
-- Emulator-specific behavior remains in the engine layer.
-- Terminal and future shells launch ROM records without knowing emulator command lines.
-- Missing ROMs, profiles, or emulator executables fail safely instead of crashing J-29.
-
-### Validation
-- Awaiting validation against a real emulator and ROM before v0.25 is marked complete.

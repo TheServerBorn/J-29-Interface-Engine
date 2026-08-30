@@ -1,6 +1,7 @@
 from tkinter import Tk, Label, Canvas
 
 from engine.core import J29Engine
+from pathlib import Path
 
 engine = J29Engine()
 identity = engine.get_identity()
@@ -402,6 +403,9 @@ def update_footer():
     elif current_screen == "system":
         set_footer("ESC BACK")
 
+    elif current_screen == "media_prompt":
+        set_footer("Y/ENTER LOAD   N/ESC IGNORE")
+
     else:
         set_footer("")
 
@@ -435,6 +439,246 @@ def clear_current_screen():
 
     elif current_screen == "help":
         show_command_help()
+
+    elif current_screen == "media_prompt":
+        draw_media_prompt()
+
+def _same_volume(left, right):
+    return str(left or "").rstrip("\\/").casefold() == str(right or "").rstrip("\\/").casefold()
+
+
+def _remove_queued_media(volume):
+    global media_queue
+    media_queue = [
+        item for item in media_queue
+        if not _same_volume(item.get("volume"), volume)
+    ]
+
+
+def handle_removed_media(media):
+    """Safely handle removal whether media is queued, prompted, or idle."""
+    global pending_media
+
+    volume = media.get("volume")
+    name = media.get("volume_name", "MEDIA")
+
+    _remove_queued_media(volume)
+
+    if pending_media and _same_volume(pending_media.get("volume"), volume):
+        pending_media = None
+        go_back()
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=3000
+        )
+        return
+
+    if current_screen != "media_prompt":
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=2500
+        )
+
+
+def draw_media_prompt():
+    if not pending_media:
+        return
+
+    game = pending_media.get("game")
+    volume_name = pending_media.get("volume_name", "REMOVABLE MEDIA")
+
+    if game:
+        platform_name = game.get("platform") or "UNKNOWN FORMAT"
+        set_menu(
+            "MEDIA DETECTED\n\n"
+            f"{game.get('name', 'UNKNOWN PROGRAM')}\n"
+            f"{platform_name}\n\n"
+            "LOAD GAME?\n"
+            "[Y/N]"
+        )
+    else:
+        count = pending_media.get("candidate_count", 0)
+        if count > 1:
+            detail = f"{count} PROGRAM FILES DETECTED"
+        else:
+            detail = "NO RECOGNIZED PROGRAM"
+
+        set_menu(
+            "MEDIA DETECTED\n\n"
+            f"{volume_name}\n\n"
+            f"{detail}\n\n"
+            "PRESS ESC"
+        )
+
+    update_footer()
+
+
+def show_media_prompt(media):
+    global current_screen, pending_media
+
+    # Do not recursively replace an active media prompt.
+    if current_screen == "media_prompt":
+        return
+
+    remember_current_screen()
+    pending_media = media
+    current_screen = "media_prompt"
+    set_title(
+        "========================================\n"
+        "          PHYSICAL MEDIA\n"
+        "========================================"
+    )
+    draw_media_prompt()
+
+
+def dismiss_media_prompt():
+    global pending_media
+
+    pending_media = None
+    go_back()
+
+    # If more than one volume arrived during the same polling interval, present
+    # them one at a time instead of silently dropping later insertions.
+    if media_queue:
+        next_media = media_queue.pop(0)
+        root.after(100, lambda: show_media_prompt(next_media))
+
+
+
+def _launch_display_name(game):
+    if not game:
+        return "PROGRAM"
+
+    return (
+        game.get("title")
+        or game.get("name")
+        or game.get("id")
+        or "PROGRAM"
+    )
+
+
+def draw_launch_transition(game):
+    """Show an immediate acknowledgement while an external program starts."""
+    global current_screen
+
+    current_screen = "launching"
+
+    name = str(_launch_display_name(game)).upper()
+    launch_type = str(game.get("launch_type", "PROGRAM")).upper()
+
+    set_title(
+        "========================================\n"
+        "          CALLISTO COMPUTER SYSTEMS\n"
+        "========================================"
+    )
+    set_menu(
+        "LAUNCHING PROGRAM...\n\n"
+        f"{name}\n"
+        f"{launch_type}\n\n"
+        "PLEASE WAIT"
+    )
+    set_footer("")
+
+
+def launch_game_with_transition(game, on_success=None, on_failure=None):
+    """Shared launch path for Steam, ROMs, executables, and physical media."""
+    if not game:
+        return False
+
+    # Render the acknowledgement before calling the external launcher. This
+    # avoids exposing the previous menu during Steam/emulator startup latency.
+    draw_launch_transition(game)
+    root.update_idletasks()
+
+    launched = engine.launch_game(game)
+
+    if not launched:
+        if on_failure:
+            on_failure()
+        else:
+            show_temporary_status(
+                engine.get_last_launch_error()
+                or "PROGRAM NOT AVAILABLE"
+            )
+        return False
+
+    # External launchers normally return control before their window is ready.
+    # Keep the launch acknowledgement visible long enough to bridge that gap.
+    # The callback restores the correct J-29 screen in the background, so when
+    # the external program eventually exits the user returns somewhere sane.
+    if on_success:
+        root.after(6000, on_success)
+
+    return True
+
+def launch_pending_media():
+    if not pending_media:
+        return
+
+    game = pending_media.get("game")
+    if not game:
+        dismiss_media_prompt()
+        return
+
+    rom_path = game.get("rom_path") or game.get("path")
+    if rom_path and not Path(rom_path).exists():
+        name = pending_media.get("volume_name", "MEDIA")
+        dismiss_media_prompt()
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=3000
+        )
+        return
+
+    def media_launch_failed():
+        # Return to the media prompt so the error is meaningful in context.
+        draw_media_prompt()
+        show_temporary_status(
+            engine.get_last_launch_error()
+            or "MEDIA PROGRAM NOT AVAILABLE"
+        )
+
+    launch_game_with_transition(
+        game,
+        on_success=dismiss_media_prompt,
+        on_failure=media_launch_failed,
+    )
+
+
+
+def poll_physical_media():
+    if media_poll_active:
+        try:
+            events = engine.poll_media_events()
+            for media in events.get("inserted", []):
+                volume = media.get("volume")
+
+                already_pending = (
+                    pending_media
+                    and _same_volume(pending_media.get("volume"), volume)
+                )
+                already_queued = any(
+                    _same_volume(item.get("volume"), volume)
+                    for item in media_queue
+                )
+
+                if already_pending or already_queued:
+                    continue
+
+                if current_screen == "media_prompt" or pending_media:
+                    media_queue.append(media)
+                else:
+                    show_media_prompt(media)
+
+            for media in events.get("removed", []):
+                handle_removed_media(media)
+
+        except Exception:
+            # Physical-media monitoring must never crash the terminal.
+            pass
+
+    root.after(2000, poll_physical_media)
+
 
 def show_temporary_status(text, duration=5000):
 
@@ -483,6 +727,9 @@ detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
 screen_history = []
+pending_media = None
+media_queue = []
+media_poll_active = True
 
 def remember_current_screen():
     if current_screen != "boot":
@@ -1088,6 +1335,16 @@ def key_pressed(event):
         handle_command_input(event)
         return
 
+    if current_screen == "media_prompt":
+        key = event.keysym.lower()
+
+        if key in ("y", "return"):
+            launch_pending_media()
+        elif key in ("n", "escape"):
+            dismiss_media_prompt()
+
+        return
+
     # F is a screen action in v0.22. Other alphabetic keys still open
     # command mode as before.
     if event.keysym.lower() == "f" and current_screen == "game_details":
@@ -1216,17 +1473,36 @@ def key_pressed(event):
             else:
                 go_back()
 
+    elif current_screen == "launching":
+        # External program handoff is in progress. Ignore terminal navigation
+        # until the scheduled background restore occurs.
+        return
+
     elif current_screen == "game_details":
 
         if event.keysym == "Return":
             if not selected_game_record:
                 return
 
-            if not engine.launch_game(selected_game_record):
+            game_to_launch = selected_game_record
+
+            def restore_game_details():
+                if game_to_launch:
+                    show_game_details(game_to_launch)
+
+            def game_launch_failed():
+                if game_to_launch:
+                    show_game_details(game_to_launch)
                 show_temporary_status(
                     engine.get_last_launch_error()
                     or "PROGRAM NOT AVAILABLE"
                 )
+
+            launch_game_with_transition(
+                game_to_launch,
+                on_success=restore_game_details,
+                on_failure=game_launch_failed,
+            )
 
         elif event.keysym == "Escape":
             return_from_game_details()
@@ -1329,5 +1605,10 @@ def run():
         show_main_menu()
 
     blink_cursor()
+
+    # Start the physical-media polling chain. poll_physical_media() schedules
+    # its own next run every two seconds, but it must be invoked once here
+    # when the Terminal UI starts.
+    root.after(1000, poll_physical_media)
 
     root.mainloop()
