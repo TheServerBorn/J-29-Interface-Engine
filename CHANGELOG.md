@@ -505,3 +505,36 @@ The project will separate:
 The original J-29 Terminal interface will remain the reference shell and the target experience for the initial v1.0 release.
 
 This pivot was made early in development after the project expanded beyond its original purpose-built launcher concept. The modular architecture is intended to support future shells, themes, hardware projects, and community-created interfaces without requiring the core engine to be rewritten.
+## v0.24 — Steam Support — COMPLETE
+
+### Added
+- Automatic Steam installation detection.
+- Automatic discovery of installed Steam libraries and games.
+- Parsing of Steam `libraryfolders.vdf` and `appmanifest_*.acf` files.
+- Support for multiple Steam library locations.
+- Automatic `GAMES/STEAM/` library population.
+- Steam App ID and launch-type metadata integration.
+- Engine-level Steam launch dispatch using `steam://run/<appid>`.
+- Cross-platform Steam URI launching architecture for Windows, Linux, and macOS.
+- Manual Steam-entry example support in `games.example.ini`.
+
+### Changed
+- Steam titles now use the same Program Information workflow as other J-29 games.
+- Steam launches integrate with existing Favorites and Recent Games state.
+- Manual Steam metadata overrides duplicate auto-discovered Steam entries.
+- J-29 remains active while an external Steam game is running and returns to the selected game's metadata screen after exit.
+
+### Fixed
+- Filtered Steamworks Common Redistributables (App ID 228980) from the visible game library.
+- Updated system information handling to avoid unconditional Windows-only dependencies and preserve Windows, Linux, and macOS compatibility.
+
+### Validation
+- Validated against a real Windows Steam installation.
+- Confirmed automatic discovery of installed Steam titles.
+- Confirmed successful launch of three separate Steam games.
+- Confirmed fullscreen game operation does not disrupt J-29.
+- Confirmed J-29 returns to the correct Program Information screen after game exit.
+
+### Roadmap
+- v0.24 Steam Support is complete.
+- ROM/emulator dispatch remains reserved for v0.25 Emulator Support.

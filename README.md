@@ -437,8 +437,8 @@ Stable milestones are maintained through Git branches, commits, tags, and GitHub
 - **v0.21 — Game Metadata** ✅
 - **v0.22 — Favorites** ✅
 - **v0.23 — Recent Games**✅
-- **v0.24 — Steam Support** 🚧
-- **v0.25 — Emulator Support**
+- **v0.24 — Steam Support** ✅
+- **v0.25 — Emulator Support**🚧
 
 Further milestones are documented in [`ROADMAP.md`](ROADMAP.md).
 
