@@ -1,6 +1,7 @@
 from engine.library import build_library
 from engine.theme import load_theme
 from engine.games import load_games
+from engine.game_state import load_game_state, save_game_state
 from engine.launcher import launch_program
 from engine.config import load_identity, load_settings
 from engine.system_info import (
@@ -19,6 +20,35 @@ class J29Engine:
         return build_library(
             self.get_games()
         )
+
+    def get_favorite_games(self):
+        favorite_ids = set(load_game_state().get("favorites", []))
+
+        return [
+            game
+            for game in self.get_games()
+            if game["id"] in favorite_ids
+        ]
+
+    def is_favorite(self, game_id):
+        favorites = load_game_state().get("favorites", [])
+        return game_id in favorites
+
+    def toggle_favorite(self, game_id):
+        state = load_game_state()
+        favorites = state.get("favorites", [])
+
+        if game_id in favorites:
+            favorites.remove(game_id)
+            is_favorite = False
+        else:
+            favorites.append(game_id)
+            is_favorite = True
+
+        state["favorites"] = favorites
+        save_game_state(state)
+
+        return is_favorite
     
     def launch_game(self, program_path):
         return launch_program(program_path)

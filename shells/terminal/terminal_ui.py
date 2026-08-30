@@ -291,6 +291,10 @@ def execute_command():
         remember_current_screen()
         show_game_library()
 
+    elif command in ("FAVORITES", "FAV"):
+        remember_current_screen()
+        show_favorites()
+
     elif command == "DIR":
         show_directory_listing()
 
@@ -382,8 +386,11 @@ def update_footer():
                 "↑↓ MOVE   ENTER RUN   ESC BACK"
             )
 
+    elif current_screen == "favorites":
+        set_footer("↑↓ MOVE   ENTER INFO   F REMOVE   ESC BACK")
+
     elif current_screen == "game_details":
-        set_footer("ENTER RUN   ESC BACK")
+        set_footer("ENTER RUN   F FAVORITE   ESC BACK")
 
     elif current_screen == "system":
         set_footer("ESC BACK")
@@ -405,6 +412,9 @@ def clear_current_screen():
 
     elif current_screen == "games":
         draw_game_library()
+
+    elif current_screen == "favorites":
+        draw_favorites()
 
     elif current_screen == "game_details":
         if selected_game_record:
@@ -459,6 +469,7 @@ selected_option = 0
 selected_game = 0
 current_library_folder = None
 selected_game_record = None
+detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
 screen_history = []
@@ -470,7 +481,7 @@ def remember_current_screen():
 def go_back():
 
     if current_screen == "game_details":
-        return_to_game_library()
+        return_from_game_details()
         return
 
     # If inside a library directory,
@@ -493,6 +504,9 @@ def go_back():
 
     elif previous == "games":
         show_game_library()
+
+    elif previous == "favorites":
+        show_favorites()
 
     elif previous == "system":
         show_system_info()
@@ -538,6 +552,7 @@ def draw_main_menu():
 
     options = [
         "GAME LIBRARY",
+        "FAVORITES",
         "SYSTEM INFO",
         "EXIT"
     ]
@@ -674,7 +689,7 @@ def show_game_details(game):
     platform = _metadata_value(game.get("platform"))
     launch_type = _metadata_value(game.get("launch_type"))
 
-    favorite = "YES" if game.get("favorite") else "NO"
+    favorite = "YES" if engine.is_favorite(game["id"]) else "NO"
 
     extra_lines = ""
 
@@ -698,12 +713,21 @@ def show_game_details(game):
 
     update_footer()
 
-def return_to_game_library():
+def return_from_game_details():
     global selected_game
 
-    folder = detail_parent_folder
     index = detail_parent_index
 
+    if detail_parent_screen == "favorites":
+        show_favorites()
+        entries = engine.get_favorite_games()
+
+        if entries:
+            selected_game = min(index, len(entries) - 1)
+            draw_favorites()
+        return
+
+    folder = detail_parent_folder
     show_game_library(folder)
 
     entries = library.get(folder, []) if folder else list(library.keys())
@@ -711,6 +735,63 @@ def return_to_game_library():
     if entries:
         selected_game = min(index, len(entries) - 1)
         draw_game_library()
+
+
+def show_favorites():
+    global current_screen, selected_game
+
+    current_screen = "favorites"
+    selected_game = 0
+
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="normal"
+    )
+
+    set_title(
+        "====================================\n"
+        "            FAVORITES\n"
+        "===================================="
+    )
+
+    update_footer()
+    draw_favorites()
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        get_prompt_y()
+    )
+
+
+def draw_favorites():
+    favorite_games = engine.get_favorite_games()
+
+    if not favorite_games:
+        set_menu(
+            "NO FAVORITE PROGRAMS\n\n"
+            "OPEN A PROGRAM AND PRESS F TO ADD ONE"
+        )
+        return
+
+    menu_text = ""
+
+    for i, game in enumerate(favorite_games):
+        marker = "> " if i == selected_game else "  "
+        menu_text += marker + game["name"] + "\n"
+
+    set_menu(menu_text)
+
+
+def toggle_selected_favorite(game):
+    is_favorite = engine.toggle_favorite(game["id"])
+
+    if is_favorite:
+        show_temporary_status("ADDED TO FAVORITES", duration=2000)
+    else:
+        show_temporary_status("REMOVED FROM FAVORITES", duration=2000)
+
+    return is_favorite
 
 
 def show_system_info():
@@ -839,6 +920,7 @@ def show_command_help():
         "AVAILABLE COMMANDS\n\n"
         "HELP\n"
         "GAMES\n"
+        "FAVORITES / FAV\n"
         "DIR\n"
         "LS\n"
         "CD <DIRECTORY>\n"
@@ -854,10 +936,26 @@ def show_command_help():
 def key_pressed(event):
 
     global selected_option, selected_game, command_mode
-    global detail_parent_folder, detail_parent_index
+    global detail_parent_screen, detail_parent_folder, detail_parent_index
 
     if command_mode:
         handle_command_input(event)
+        return
+
+    # F is a screen action in v0.22. Other alphabetic keys still open
+    # command mode as before.
+    if event.keysym.lower() == "f" and current_screen == "game_details":
+        if selected_game_record:
+            toggle_selected_favorite(selected_game_record)
+            show_game_details(selected_game_record)
+        return
+
+    if event.keysym.lower() == "f" and current_screen == "favorites":
+        favorite_games = engine.get_favorite_games()
+        if favorite_games:
+            game = favorite_games[selected_game]
+            toggle_selected_favorite(game)
+            show_favorites()
         return
 
     if event.char and event.char.isalpha():
@@ -871,14 +969,14 @@ def key_pressed(event):
             selected_option -= 1
 
             if selected_option < 0:
-                selected_option = 2
+                selected_option = 3
 
             draw_main_menu()
 
         elif event.keysym == "Down":
             selected_option += 1
 
-            if selected_option > 2:
+            if selected_option > 3:
                 selected_option = 0
 
             draw_main_menu()
@@ -891,9 +989,13 @@ def key_pressed(event):
 
             elif selected_option == 1:
                 remember_current_screen()
-                show_system_info()
+                show_favorites()
 
             elif selected_option == 2:
+                remember_current_screen()
+                show_system_info()
+
+            elif selected_option == 3:
                 root.destroy()
 
     elif current_screen == "games":
@@ -949,6 +1051,7 @@ def key_pressed(event):
             else:
 
                 game = entries[selected_game]
+                detail_parent_screen = "games"
                 detail_parent_folder = current_library_folder
                 detail_parent_index = selected_game
                 show_game_details(game)
@@ -977,7 +1080,41 @@ def key_pressed(event):
                 )
 
         elif event.keysym == "Escape":
-            return_to_game_library()
+            return_from_game_details()
+
+    elif current_screen == "favorites":
+        favorite_games = engine.get_favorite_games()
+
+        if event.keysym == "Up":
+            if not favorite_games:
+                return
+
+            selected_game -= 1
+            if selected_game < 0:
+                selected_game = len(favorite_games) - 1
+            draw_favorites()
+
+        elif event.keysym == "Down":
+            if not favorite_games:
+                return
+
+            selected_game += 1
+            if selected_game >= len(favorite_games):
+                selected_game = 0
+            draw_favorites()
+
+        elif event.keysym == "Return":
+            if not favorite_games:
+                return
+
+            game = favorite_games[selected_game]
+            detail_parent_screen = "favorites"
+            detail_parent_folder = None
+            detail_parent_index = selected_game
+            show_game_details(game)
+
+        elif event.keysym == "Escape":
+            go_back()
 
     elif current_screen == "system":
 
