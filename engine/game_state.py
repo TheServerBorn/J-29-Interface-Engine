@@ -3,10 +3,24 @@ from pathlib import Path
 
 
 STATE_FILE = Path("config/game_state.json")
+RECENT_LIMIT = 5
 
 
 def _default_state():
-    return {"favorites": []}
+    return {"favorites": [], "recent": []}
+
+
+def _clean_ids(values):
+    if not isinstance(values, list):
+        return []
+
+    cleaned = []
+    for value in values:
+        game_id = str(value).strip()
+        if game_id and game_id not in cleaned:
+            cleaned.append(game_id)
+
+    return cleaned
 
 
 def load_game_state():
@@ -24,16 +38,9 @@ def load_game_state():
     if not isinstance(state, dict):
         return _default_state()
 
-    favorites = state.get("favorites", [])
-    if not isinstance(favorites, list):
-        favorites = []
-
     return {
-        "favorites": [
-            str(game_id)
-            for game_id in favorites
-            if str(game_id).strip()
-        ]
+        "favorites": _clean_ids(state.get("favorites", [])),
+        "recent": _clean_ids(state.get("recent", []))[:RECENT_LIMIT],
     }
 
 
@@ -43,7 +50,8 @@ def save_game_state(state):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     clean_state = {
-        "favorites": list(dict.fromkeys(state.get("favorites", [])))
+        "favorites": _clean_ids(state.get("favorites", [])),
+        "recent": _clean_ids(state.get("recent", []))[:RECENT_LIMIT],
     }
 
     with STATE_FILE.open("w", encoding="utf-8") as file:

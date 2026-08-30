@@ -295,6 +295,10 @@ def execute_command():
         remember_current_screen()
         show_favorites()
 
+    elif command in ("RECENT", "RECENTS"):
+        remember_current_screen()
+        show_recent()
+
     elif command == "DIR":
         show_directory_listing()
 
@@ -389,6 +393,9 @@ def update_footer():
     elif current_screen == "favorites":
         set_footer("↑↓ MOVE   ENTER INFO   F REMOVE   ESC BACK")
 
+    elif current_screen == "recent":
+        set_footer("↑↓ MOVE   ENTER INFO   ESC BACK")
+
     elif current_screen == "game_details":
         set_footer("ENTER RUN   F FAVORITE   ESC BACK")
 
@@ -415,6 +422,9 @@ def clear_current_screen():
 
     elif current_screen == "favorites":
         draw_favorites()
+
+    elif current_screen == "recent":
+        draw_recent()
 
     elif current_screen == "game_details":
         if selected_game_record:
@@ -508,6 +518,9 @@ def go_back():
     elif previous == "favorites":
         show_favorites()
 
+    elif previous == "recent":
+        show_recent()
+
     elif previous == "system":
         show_system_info()
 
@@ -553,6 +566,7 @@ def draw_main_menu():
     options = [
         "GAME LIBRARY",
         "FAVORITES",
+        "RECENT GAMES",
         "SYSTEM INFO",
         "EXIT"
     ]
@@ -727,6 +741,23 @@ def return_from_game_details():
             draw_favorites()
         return
 
+    if detail_parent_screen == "recent":
+        selected_id = selected_game_record.get("id") if selected_game_record else None
+        show_recent()
+        entries = engine.get_recent_games()
+
+        if entries:
+            matching_index = next(
+                (i for i, game in enumerate(entries) if game.get("id") == selected_id),
+                None,
+            )
+            if matching_index is not None:
+                selected_game = matching_index
+            else:
+                selected_game = min(index, len(entries) - 1)
+            draw_recent()
+        return
+
     folder = detail_parent_folder
     show_game_library(folder)
 
@@ -792,6 +823,52 @@ def toggle_selected_favorite(game):
         show_temporary_status("REMOVED FROM FAVORITES", duration=2000)
 
     return is_favorite
+
+
+def show_recent():
+    global current_screen, selected_game
+
+    current_screen = "recent"
+    selected_game = 0
+
+    scanline_canvas.itemconfig(
+        canvas_cursor,
+        state="normal"
+    )
+
+    set_title(
+        "====================================\n"
+        "          RECENT GAMES\n"
+        "===================================="
+    )
+
+    update_footer()
+    draw_recent()
+
+    scanline_canvas.coords(
+        canvas_cursor,
+        60,
+        get_prompt_y()
+    )
+
+
+def draw_recent():
+    recent_games = engine.get_recent_games()
+
+    if not recent_games:
+        set_menu(
+            "NO RECENT GAMES\n\n"
+            "LAUNCH A PROGRAM TO ADD IT HERE"
+        )
+        return
+
+    menu_text = ""
+
+    for i, game in enumerate(recent_games):
+        marker = "> " if i == selected_game else "  "
+        menu_text += marker + game["name"] + "\n"
+
+    set_menu(menu_text)
 
 
 def show_system_info():
@@ -921,6 +998,7 @@ def show_command_help():
         "HELP\n"
         "GAMES\n"
         "FAVORITES / FAV\n"
+        "RECENT / RECENTS\n"
         "DIR\n"
         "LS\n"
         "CD <DIRECTORY>\n"
@@ -969,14 +1047,14 @@ def key_pressed(event):
             selected_option -= 1
 
             if selected_option < 0:
-                selected_option = 3
+                selected_option = 4
 
             draw_main_menu()
 
         elif event.keysym == "Down":
             selected_option += 1
 
-            if selected_option > 3:
+            if selected_option > 4:
                 selected_option = 0
 
             draw_main_menu()
@@ -993,9 +1071,13 @@ def key_pressed(event):
 
             elif selected_option == 2:
                 remember_current_screen()
-                show_system_info()
+                show_recent()
 
             elif selected_option == 3:
+                remember_current_screen()
+                show_system_info()
+
+            elif selected_option == 4:
                 root.destroy()
 
     elif current_screen == "games":
@@ -1074,7 +1156,10 @@ def key_pressed(event):
 
             game_path = selected_game_record.get("path", "")
 
-            if not engine.launch_game(game_path):
+            if not engine.launch_game(
+                game_path,
+                selected_game_record.get("id")
+            ):
                 show_temporary_status(
                     "PROGRAM NOT AVAILABLE"
                 )
@@ -1109,6 +1194,40 @@ def key_pressed(event):
 
             game = favorite_games[selected_game]
             detail_parent_screen = "favorites"
+            detail_parent_folder = None
+            detail_parent_index = selected_game
+            show_game_details(game)
+
+        elif event.keysym == "Escape":
+            go_back()
+
+    elif current_screen == "recent":
+        recent_games = engine.get_recent_games()
+
+        if event.keysym == "Up":
+            if not recent_games:
+                return
+
+            selected_game -= 1
+            if selected_game < 0:
+                selected_game = len(recent_games) - 1
+            draw_recent()
+
+        elif event.keysym == "Down":
+            if not recent_games:
+                return
+
+            selected_game += 1
+            if selected_game >= len(recent_games):
+                selected_game = 0
+            draw_recent()
+
+        elif event.keysym == "Return":
+            if not recent_games:
+                return
+
+            game = recent_games[selected_game]
+            detail_parent_screen = "recent"
             detail_parent_folder = None
             detail_parent_index = selected_game
             show_game_details(game)
