@@ -4,8 +4,8 @@ A modular retro-computing interface engine for games, physical media, and fictio
 
 ## Project Status
 
-**Stable Development Release:** v0.22 — Favorites  
-**Current Development:** v0.23 — Recents
+**Stable Development Release:** v0.23 — Recents 
+**Current Development:** v0.24 — Steam Support
 
 J-29 began as a custom retro terminal launcher for the Callisto J-29 computer project.
 
@@ -436,8 +436,8 @@ Stable milestones are maintained through Git branches, commits, tags, and GitHub
 - **v0.20 — Filesystem-Style Library Browser** ✅
 - **v0.21 — Game Metadata** ✅
 - **v0.22 — Favorites** ✅
-- **v0.23 — Recent Games**🚧
-- **v0.24 — Steam Support**
+- **v0.23 — Recent Games**✅
+- **v0.24 — Steam Support** 🚧
 - **v0.25 — Emulator Support**
 
 Further milestones are documented in [`ROADMAP.md`](ROADMAP.md).

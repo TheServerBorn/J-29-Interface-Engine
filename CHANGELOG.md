@@ -1,6 +1,19 @@
 # Changelog
 
-## v0.22 — Favorites (validation build)
+## v0.23 — Recent Games (validation build)
+
+- Added persistent recent-game history to `config/game_state.json`.
+- Added engine methods to record and retrieve recent games by stable game ID.
+- Recent history updates only after a successful program launch.
+- Re-launching a game moves it to the top without creating duplicates.
+- Limited the recent list to the five most recently launched games.
+- Added RECENT GAMES to the Terminal Shell main menu.
+- Added `RECENT` and `RECENTS` commands.
+- Recent entries open the existing v0.21 Program Information screen before launch.
+- Returning from Program Information preserves the selected recent game after the list reorders.
+- Preserved v0.22 Favorites data in the shared persistent game-state file.
+
+## v0.22 — Favorites
 
 - Added persistent favorite state in `config/game_state.json`.
 - Added engine methods to list, inspect, add, and remove favorites by stable game ID.

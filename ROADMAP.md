@@ -318,9 +318,9 @@ Completed:
 
 Allow users to mark frequently used games as favorites.
 
-Implementation status: **READY FOR VALIDATION**
+Status: **COMPLETE**
 
-Implemented in the v0.22 branch:
+Completed:
 
 - Persistent favorites stored outside `games.ini`
 - Add favorite from Program Information with `F`
@@ -331,8 +331,6 @@ Implemented in the v0.22 branch:
 - Favorites open the existing v0.21 Program Information screen before launch
 - Favorites survive application restart
 
-Validation is required before v0.22 is marked complete.
-
 ---
 
 # v0.23 — Recent Games
@@ -341,13 +339,21 @@ Validation is required before v0.22 is marked complete.
 
 Track recently launched software.
 
-Possible display:
+Implementation status: **READY FOR VALIDATION**
 
-    RECENT SOFTWARE
+Implemented in the v0.23 branch:
 
-    DOOM
-    QUAKE
-    FALLOUT
+- Persistent recent-game history stored alongside favorites in `config/game_state.json`
+- Recent history records only after a successful program launch
+- Re-launching a game moves it to the top instead of creating a duplicate
+- Recent history is limited to the five most recently launched games
+- RECENT GAMES view on the Terminal Shell main menu
+- `RECENT` / `RECENTS` commands
+- Recent entries open the existing Program Information screen before launch
+- Returning from Program Information preserves the selected recent game, even after reordering
+- Favorites and recent history coexist in the same persistent state without overwriting one another
+
+Validation is required before v0.23 is marked complete.
 
 ---
 
