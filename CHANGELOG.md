@@ -1,3 +1,65 @@
+## v0.26 — Physical Media System — COMPLETE
+
+### Added
+- Cross-platform physical-media detection foundation for removable media.
+- Automatic single-ROM recognition and `MEDIA DETECTED` launch prompt.
+- Runtime insertion/removal events with sequential event handling.
+- Safe hot-removal behavior while the media prompt is open.
+- Duplicate insertion protection and fresh detection after reinsertion.
+- Windows mounted-volume identity tracking so SD cards work correctly through
+  readers that retain the same drive letter.
+- Terminal startup now correctly begins the recurring physical-media poll loop.
+
+### Real Hardware Validation
+- SD card insertion into an already-connected USB reader: PASS.
+- Full USB reader removal: PASS.
+- `MEDIA REMOVED` status: PASS.
+- Full reader reinsertion and fresh `MEDIA DETECTED` prompt: PASS.
+- Removal while `LOAD GAME?` prompt is open: PASS.
+- Physical-media ROM launch through the existing emulator pipeline: PASS.
+- Repeated remove / insert / load / launch cycles: PASS.
+
+### Status
+- v0.26 Physical Media System is COMPLETE.
+- Temporary diagnostic logging used during hardware validation has been removed.
+
+## v0.26 — Physical Media Poll Startup Fix
+
+### Fixed
+- The Terminal UI now schedules the first physical-media poll when `run()`
+  starts.
+- The existing two-second recurring polling chain can now actually begin.
+- This fixes the condition where the media engine initialized correctly but
+  USB/SD insertions never produced a Terminal event or `MEDIA DETECTED` prompt.
+
+### Validation
+- Compile check passed.
+- Real removable-media insertion validation pending.
+
+## v0.26 — Windows Media Identity Fix
+
+### Fixed
+- Windows physical-media snapshots now identify mounted media using the volume
+  serial/name/filesystem in addition to the drive letter.
+- SD-card insertion can generate a fresh event even when the USB reader remains
+  mounted at the same drive letter before and after insertion.
+- Empty/inaccessible reader slots are ignored when Windows cannot return valid
+  volume information.
+
+### Validation
+- Compile check passed.
+- Real SD-reader validation required on Windows.
+
+## v0.26 — Windows Empty Card Reader Fix
+
+### Fixed
+- Windows drive letters that exist only because an empty USB/SD reader is
+  connected are no longer counted as mounted physical media.
+- Inserting an SD card into an already-connected reader can now generate a new
+  `MEDIA DETECTED` event even when Windows keeps the same drive letter.
+- Windows media discovery verifies that the drive has an accessible filesystem
+  before adding it to the media snapshot.
+
 ## v0.26 — Physical Media Safety Pass
 
 ### Fixed

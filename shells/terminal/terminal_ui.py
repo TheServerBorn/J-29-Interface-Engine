@@ -572,11 +572,11 @@ def launch_pending_media():
         )
 
 
+
 def poll_physical_media():
     if media_poll_active:
         try:
             events = engine.poll_media_events()
-
             for media in events.get("inserted", []):
                 volume = media.get("volume")
 
@@ -1513,5 +1513,10 @@ def run():
         show_main_menu()
 
     blink_cursor()
+
+    # Start the physical-media polling chain. poll_physical_media() schedules
+    # its own next run every two seconds, but it must be invoked once here
+    # when the Terminal UI starts.
+    root.after(1000, poll_physical_media)
 
     root.mainloop()

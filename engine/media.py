@@ -5,6 +5,8 @@ import platform
 import string
 from pathlib import Path
 
+
+
 # Keep v0.26 deliberately conservative. v0.27 will introduce the formal
 # J-29 media metadata/container format.
 _ROM_EXTENSIONS = {
@@ -94,7 +96,22 @@ def _windows_volumes():
         if drive_type in (0, 1, 4, 6):
             continue
 
-        volumes.append(Path(root))
+        path = Path(root)
+
+        # Windows can keep a drive letter assigned to an empty USB/SD card
+        # reader. "No Media" slots must not count as mounted media, otherwise
+        # inserting a card into the same drive letter produces no new event.
+        try:
+            if not path.exists():
+                continue
+
+            # Touch the filesystem. An empty reader may have a logical drive
+            # letter but no accessible mounted volume.
+            next(path.iterdir(), None)
+        except (OSError, PermissionError):
+            continue
+
+        volumes.append(path)
 
     return volumes
 
@@ -133,7 +150,7 @@ def _macos_volumes():
         return []
 
 
-def list_media_volumes():
+def _list_media_volumes_raw():
     system = platform.system()
 
     if system == "Windows":
@@ -150,11 +167,59 @@ def list_media_volumes():
     return _linux_volumes()
 
 
+
+def list_media_volumes():
+    return _list_media_volumes_raw()
+
+
+def _windows_volume_signature(path):
+    """Return a signature that changes when media inside a reader changes."""
+    root = str(path)
+    if not root.endswith("\\"):
+        root += "\\"
+
+    volume_name = ctypes.create_unicode_buffer(261)
+    filesystem_name = ctypes.create_unicode_buffer(261)
+    serial_number = ctypes.c_uint(0)
+    max_component_length = ctypes.c_uint(0)
+    filesystem_flags = ctypes.c_uint(0)
+
+    ok = ctypes.windll.kernel32.GetVolumeInformationW(
+        ctypes.c_wchar_p(root),
+        volume_name,
+        len(volume_name),
+        ctypes.byref(serial_number),
+        ctypes.byref(max_component_length),
+        ctypes.byref(filesystem_flags),
+        filesystem_name,
+        len(filesystem_name),
+    )
+
+    if not ok:
+        return None
+
+    return (
+        str(path).rstrip("\\/").casefold(),
+        int(serial_number.value),
+        volume_name.value.casefold(),
+        filesystem_name.value.casefold(),
+    )
+
+
 def snapshot_media():
-    return {
-        _volume_key(path): path
-        for path in list_media_volumes()
-    }
+    snapshot = {}
+
+    for path in list_media_volumes():
+        if platform.system() == "Windows":
+            key = _windows_volume_signature(path)
+            if key is None:
+                continue
+        else:
+            key = _volume_key(path)
+
+        snapshot[key] = path
+
+    return snapshot
 
 
 def _volume_key(path):
@@ -282,17 +347,22 @@ class MediaMonitor:
         previous_keys = set(self._snapshot)
         current_keys = set(current)
 
+        inserted_keys = current_keys - previous_keys
+        removed_keys = previous_keys - current_keys
+
+
         inserted = [
             inspect_media(current[key])
-            for key in sorted(current_keys - previous_keys)
+            for key in sorted(inserted_keys)
         ]
         removed = [
             {
                 "volume": str(self._snapshot[key]),
                 "volume_name": self._snapshot[key].name or str(self._snapshot[key]),
             }
-            for key in sorted(previous_keys - current_keys)
+            for key in sorted(removed_keys)
         ]
+
 
         self._snapshot = current
         return {
