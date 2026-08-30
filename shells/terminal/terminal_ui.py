@@ -544,6 +544,73 @@ def dismiss_media_prompt():
         root.after(100, lambda: show_media_prompt(next_media))
 
 
+
+def _launch_display_name(game):
+    if not game:
+        return "PROGRAM"
+
+    return (
+        game.get("title")
+        or game.get("name")
+        or game.get("id")
+        or "PROGRAM"
+    )
+
+
+def draw_launch_transition(game):
+    """Show an immediate acknowledgement while an external program starts."""
+    global current_screen
+
+    current_screen = "launching"
+
+    name = str(_launch_display_name(game)).upper()
+    launch_type = str(game.get("launch_type", "PROGRAM")).upper()
+
+    set_title(
+        "========================================\n"
+        "          CALLISTO COMPUTER SYSTEMS\n"
+        "========================================"
+    )
+    set_menu(
+        "LAUNCHING PROGRAM...\n\n"
+        f"{name}\n"
+        f"{launch_type}\n\n"
+        "PLEASE WAIT"
+    )
+    set_footer("")
+
+
+def launch_game_with_transition(game, on_success=None, on_failure=None):
+    """Shared launch path for Steam, ROMs, executables, and physical media."""
+    if not game:
+        return False
+
+    # Render the acknowledgement before calling the external launcher. This
+    # avoids exposing the previous menu during Steam/emulator startup latency.
+    draw_launch_transition(game)
+    root.update_idletasks()
+
+    launched = engine.launch_game(game)
+
+    if not launched:
+        if on_failure:
+            on_failure()
+        else:
+            show_temporary_status(
+                engine.get_last_launch_error()
+                or "PROGRAM NOT AVAILABLE"
+            )
+        return False
+
+    # External launchers normally return control before their window is ready.
+    # Keep the launch acknowledgement visible long enough to bridge that gap.
+    # The callback restores the correct J-29 screen in the background, so when
+    # the external program eventually exits the user returns somewhere sane.
+    if on_success:
+        root.after(6000, on_success)
+
+    return True
+
 def launch_pending_media():
     if not pending_media:
         return
@@ -563,13 +630,19 @@ def launch_pending_media():
         )
         return
 
-    if engine.launch_game(game):
-        dismiss_media_prompt()
-    else:
+    def media_launch_failed():
+        # Return to the media prompt so the error is meaningful in context.
+        draw_media_prompt()
         show_temporary_status(
             engine.get_last_launch_error()
             or "MEDIA PROGRAM NOT AVAILABLE"
         )
+
+    launch_game_with_transition(
+        game,
+        on_success=dismiss_media_prompt,
+        on_failure=media_launch_failed,
+    )
 
 
 
@@ -1400,17 +1473,36 @@ def key_pressed(event):
             else:
                 go_back()
 
+    elif current_screen == "launching":
+        # External program handoff is in progress. Ignore terminal navigation
+        # until the scheduled background restore occurs.
+        return
+
     elif current_screen == "game_details":
 
         if event.keysym == "Return":
             if not selected_game_record:
                 return
 
-            if not engine.launch_game(selected_game_record):
+            game_to_launch = selected_game_record
+
+            def restore_game_details():
+                if game_to_launch:
+                    show_game_details(game_to_launch)
+
+            def game_launch_failed():
+                if game_to_launch:
+                    show_game_details(game_to_launch)
                 show_temporary_status(
                     engine.get_last_launch_error()
                     or "PROGRAM NOT AVAILABLE"
                 )
+
+            launch_game_with_transition(
+                game_to_launch,
+                on_success=restore_game_details,
+                on_failure=game_launch_failed,
+            )
 
         elif event.keysym == "Escape":
             return_from_game_details()
