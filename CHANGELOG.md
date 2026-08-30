@@ -1,3 +1,75 @@
+## v0.26 — Physical Media Safety Pass
+
+### Fixed
+- Removing media while the `MEDIA DETECTED` prompt is open now safely cancels
+  the prompt and returns to the previous J-29 screen.
+- Removing queued media removes its pending prompt from the queue.
+- Pressing Load after media has disappeared is rejected before emulator launch.
+- Duplicate insertion events for the same mounted volume are ignored.
+- Reinserting a previously removed device can generate a fresh insertion event.
+- Removal events remain non-fatal and cannot crash the terminal UI.
+
+### Validation
+- Compile checks passed.
+- Media state transitions are synthetic-tested.
+- Real USB insertion/removal validation remains on the release-candidate check.
+
+## v0.26 — Physical Media Runtime Events
+
+### Added
+- Persistent media monitor that tracks both insertions and removals.
+- Non-blocking `MEDIA REMOVED` terminal status.
+- Queueing for multiple media insertions detected in the same polling cycle.
+- Backward-compatible insertion polling API.
+- OS/device polling remains isolated from shell code.
+
+### Validation
+- Runtime event state is synthetic-tested.
+- Real removable-media insertion/removal validation remains pending until a
+  physical USB/removable device is available.
+
+## v0.26 — Physical Media System — INITIAL CHECKPOINT
+
+### Added
+- Cross-platform physical-media volume detection foundation.
+- Background polling for newly mounted media.
+- Windows detection supports newly appearing non-system drive letters, including
+  USB flash drives and many USB SSD/HDD devices that report as fixed disks.
+- Linux mounted-media discovery under common `/media`, `/run/media`, and `/mnt`
+  locations.
+- macOS mounted-media discovery under `/Volumes`.
+- Conservative single-game ROM inspection for inserted media.
+- In-character `MEDIA DETECTED / LOAD GAME? [Y/N]` terminal prompt.
+- Y/Enter launches the detected game through the existing v0.25 emulator layer.
+- N/Esc dismisses the inserted media.
+- Media detection failures are isolated so they cannot crash the terminal UI.
+
+### Scope Boundary
+- v0.26 initial validation uses ordinary removable storage containing one
+  recognizable ROM.
+- Multi-game physical collections and formal J-29 media metadata are deferred to
+  v0.27.
+
+## v0.25.1 — Centered Long-List Scrolling Fix
+
+### Fixed
+- Long lists now scroll around the selected cursor instead of waiting for the
+  cursor to reach the bottom of the visible page.
+- The selected game remains approximately centered vertically whenever possible.
+- Increased footer safety margin prevents list entries from rendering beneath
+  the navigation/help bar.
+- Beginning and end of a list clamp naturally while still keeping the selected
+  item visible.
+
+## v0.25.1 — Long List Scrolling
+
+### Fixed
+- Long Game Library folders now automatically scroll as the selection moves.
+- The selected item always remains visible when navigating with Up/Down.
+- Favorites and Recent Games use the same scrolling behavior.
+- Visible range indicators show the current portion of a long list.
+- List capacity adapts to the current terminal window height.
+
 # Changelog
 
 ## v0.25 — Emulator Support — COMPLETE

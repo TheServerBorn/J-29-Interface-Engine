@@ -433,3 +433,19 @@ without modifying source code.
 ## Standalone emulator auto-detection
 
 For PS2, PS3, GameCube/Wii, and PSP, the engine prefers dedicated emulator detection (PCSX2, RPCS3, Dolphin, PPSSPP) before RetroArch. Explicit emulator profiles remain the highest-priority override. Shell code remains emulator-agnostic.
+
+## Physical Media Detection
+
+`engine/media.py` owns OS-specific mounted-volume discovery and media inspection.
+The terminal shell only polls the engine and presents media events, preserving the
+cross-platform boundary. v0.26 treats one recognizable ROM on newly inserted
+storage as an immediately launchable physical-media game. Formal media metadata
+and multi-game collections are reserved for v0.27.
+
+### Media event lifecycle
+
+`MediaMonitor` owns the previous/current mounted-volume snapshots and emits
+platform-neutral `inserted` and `removed` events. Shells consume those events
+without knowing about Windows drive letters, `/Volumes`, or Linux mount roots.
+Multiple insertion events are queued by the terminal shell so prompts are not
+lost.

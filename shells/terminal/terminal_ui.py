@@ -1,6 +1,7 @@
 from tkinter import Tk, Label, Canvas
 
 from engine.core import J29Engine
+from pathlib import Path
 
 engine = J29Engine()
 identity = engine.get_identity()
@@ -402,6 +403,9 @@ def update_footer():
     elif current_screen == "system":
         set_footer("ESC BACK")
 
+    elif current_screen == "media_prompt":
+        set_footer("Y/ENTER LOAD   N/ESC IGNORE")
+
     else:
         set_footer("")
 
@@ -435,6 +439,173 @@ def clear_current_screen():
 
     elif current_screen == "help":
         show_command_help()
+
+    elif current_screen == "media_prompt":
+        draw_media_prompt()
+
+def _same_volume(left, right):
+    return str(left or "").rstrip("\\/").casefold() == str(right or "").rstrip("\\/").casefold()
+
+
+def _remove_queued_media(volume):
+    global media_queue
+    media_queue = [
+        item for item in media_queue
+        if not _same_volume(item.get("volume"), volume)
+    ]
+
+
+def handle_removed_media(media):
+    """Safely handle removal whether media is queued, prompted, or idle."""
+    global pending_media
+
+    volume = media.get("volume")
+    name = media.get("volume_name", "MEDIA")
+
+    _remove_queued_media(volume)
+
+    if pending_media and _same_volume(pending_media.get("volume"), volume):
+        pending_media = None
+        go_back()
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=3000
+        )
+        return
+
+    if current_screen != "media_prompt":
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=2500
+        )
+
+
+def draw_media_prompt():
+    if not pending_media:
+        return
+
+    game = pending_media.get("game")
+    volume_name = pending_media.get("volume_name", "REMOVABLE MEDIA")
+
+    if game:
+        platform_name = game.get("platform") or "UNKNOWN FORMAT"
+        set_menu(
+            "MEDIA DETECTED\n\n"
+            f"{game.get('name', 'UNKNOWN PROGRAM')}\n"
+            f"{platform_name}\n\n"
+            "LOAD GAME?\n"
+            "[Y/N]"
+        )
+    else:
+        count = pending_media.get("candidate_count", 0)
+        if count > 1:
+            detail = f"{count} PROGRAM FILES DETECTED"
+        else:
+            detail = "NO RECOGNIZED PROGRAM"
+
+        set_menu(
+            "MEDIA DETECTED\n\n"
+            f"{volume_name}\n\n"
+            f"{detail}\n\n"
+            "PRESS ESC"
+        )
+
+    update_footer()
+
+
+def show_media_prompt(media):
+    global current_screen, pending_media
+
+    # Do not recursively replace an active media prompt.
+    if current_screen == "media_prompt":
+        return
+
+    remember_current_screen()
+    pending_media = media
+    current_screen = "media_prompt"
+    set_title(
+        "========================================\n"
+        "          PHYSICAL MEDIA\n"
+        "========================================"
+    )
+    draw_media_prompt()
+
+
+def dismiss_media_prompt():
+    global pending_media
+
+    pending_media = None
+    go_back()
+
+    # If more than one volume arrived during the same polling interval, present
+    # them one at a time instead of silently dropping later insertions.
+    if media_queue:
+        next_media = media_queue.pop(0)
+        root.after(100, lambda: show_media_prompt(next_media))
+
+
+def launch_pending_media():
+    if not pending_media:
+        return
+
+    game = pending_media.get("game")
+    if not game:
+        dismiss_media_prompt()
+        return
+
+    rom_path = game.get("rom_path") or game.get("path")
+    if rom_path and not Path(rom_path).exists():
+        name = pending_media.get("volume_name", "MEDIA")
+        dismiss_media_prompt()
+        show_temporary_status(
+            f"MEDIA REMOVED: {name}",
+            duration=3000
+        )
+        return
+
+    if engine.launch_game(game):
+        dismiss_media_prompt()
+    else:
+        show_temporary_status(
+            engine.get_last_launch_error()
+            or "MEDIA PROGRAM NOT AVAILABLE"
+        )
+
+
+def poll_physical_media():
+    if media_poll_active:
+        try:
+            events = engine.poll_media_events()
+
+            for media in events.get("inserted", []):
+                volume = media.get("volume")
+
+                already_pending = (
+                    pending_media
+                    and _same_volume(pending_media.get("volume"), volume)
+                )
+                already_queued = any(
+                    _same_volume(item.get("volume"), volume)
+                    for item in media_queue
+                )
+
+                if already_pending or already_queued:
+                    continue
+
+                if current_screen == "media_prompt" or pending_media:
+                    media_queue.append(media)
+                else:
+                    show_media_prompt(media)
+
+            for media in events.get("removed", []):
+                handle_removed_media(media)
+
+        except Exception:
+            # Physical-media monitoring must never crash the terminal.
+            pass
+
+    root.after(2000, poll_physical_media)
+
 
 def show_temporary_status(text, duration=5000):
 
@@ -483,6 +654,9 @@ detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
 screen_history = []
+pending_media = None
+media_queue = []
+media_poll_active = True
 
 def remember_current_screen():
     if current_screen != "boot":
@@ -613,6 +787,57 @@ def show_game_library(folder=None):
         get_prompt_y()
     )
 
+
+def _list_capacity(header_lines=0):
+    """Return a safe number of list rows that will never overlap the footer."""
+    height = root.winfo_height()
+    if height < 300:
+        height = 500
+
+    # The menu begins below the title/header area.
+    menu_top = 165
+
+    # Reserve substantially more room than the footer text itself because
+    # Tk text baselines/font metrics can extend below the nominal y position.
+    footer_reserve = 120
+    usable_bottom = height - footer_reserve
+
+    available = max(100, usable_bottom - menu_top)
+
+    # MENU_FONT_SIZE is the configured nominal size; add generous line spacing
+    # so the final visible row stays comfortably clear of the help bar.
+    line_height = max(MENU_FONT_SIZE + 8, 22)
+    total_lines = max(4, int(available / line_height))
+
+    return max(3, total_lines - header_lines)
+
+
+def _visible_list_window(entries, selected_index, capacity):
+    """Center the selected entry whenever possible."""
+    count = len(entries)
+
+    if count <= capacity:
+        return 0, count
+
+    selected_index = max(0, min(selected_index, count - 1))
+
+    # Keep the cursor near the vertical center of the screen.
+    half = capacity // 2
+    start = selected_index - half
+
+    # Clamp at the beginning/end while keeping a full window.
+    start = max(0, min(start, count - capacity))
+    end = start + capacity
+
+    return start, end
+
+
+def _range_status(start, end, total):
+    if total <= 0:
+        return ""
+    return f"[{start + 1}-{end} OF {total}]"
+
+
 def draw_game_library():
 
     if not library:
@@ -622,53 +847,54 @@ def draw_game_library():
         )
         return
 
-    menu_text = ""
-
     # Root of the virtual filesystem
     if current_library_folder is None:
-
-        menu_text = "GAMES/\n\n"
-
         folders = list(library.keys())
+        capacity = _list_capacity(header_lines=2)
+        start, end = _visible_list_window(
+            folders,
+            selected_game,
+            capacity
+        )
 
-        for i, folder in enumerate(folders):
+        menu_text = (
+            f"GAMES/ {_range_status(start, end, len(folders))}\n\n"
+        )
 
-            if i == selected_game:
-                menu_text += (
-                    "> [DIR] " + folder + "\n"
-                )
-            else:
-                menu_text += (
-                    "  [DIR] " + folder + "\n"
-                )
+        for i in range(start, end):
+            folder = folders[i]
+            marker = "> " if i == selected_game else "  "
+            menu_text += f"{marker}[DIR] {folder}\n"
 
     # Inside a directory
     else:
-
-        menu_text = (
-            f"GAMES/{current_library_folder}/\n\n"
-        )
-
         folder_games = library.get(
             current_library_folder,
             []
         )
 
         if not folder_games:
-            menu_text += "NO PROGRAMS AVAILABLE"
-
+            menu_text = (
+                f"GAMES/{current_library_folder}/\n\n"
+                "NO PROGRAMS AVAILABLE"
+            )
         else:
+            capacity = _list_capacity(header_lines=2)
+            start, end = _visible_list_window(
+                folder_games,
+                selected_game,
+                capacity
+            )
 
-            for i, game in enumerate(folder_games):
+            menu_text = (
+                f"GAMES/{current_library_folder}/ "
+                f"{_range_status(start, end, len(folder_games))}\n\n"
+            )
 
-                if i == selected_game:
-                    menu_text += (
-                        "> " + game["name"] + "\n"
-                    )
-                else:
-                    menu_text += (
-                        "  " + game["name"] + "\n"
-                    )
+            for i in range(start, end):
+                game = folder_games[i]
+                marker = "> " if i == selected_game else "  "
+                menu_text += marker + game["name"] + "\n"
 
     set_menu(menu_text)
 
@@ -805,9 +1031,17 @@ def draw_favorites():
         )
         return
 
-    menu_text = ""
+    capacity = _list_capacity(header_lines=1)
+    start, end = _visible_list_window(
+        favorite_games,
+        selected_game,
+        capacity
+    )
 
-    for i, game in enumerate(favorite_games):
+    menu_text = f"FAVORITES {_range_status(start, end, len(favorite_games))}\n\n"
+
+    for i in range(start, end):
+        game = favorite_games[i]
         marker = "> " if i == selected_game else "  "
         menu_text += marker + game["name"] + "\n"
 
@@ -862,9 +1096,17 @@ def draw_recent():
         )
         return
 
-    menu_text = ""
+    capacity = _list_capacity(header_lines=1)
+    start, end = _visible_list_window(
+        recent_games,
+        selected_game,
+        capacity
+    )
 
-    for i, game in enumerate(recent_games):
+    menu_text = f"RECENT {_range_status(start, end, len(recent_games))}\n\n"
+
+    for i in range(start, end):
+        game = recent_games[i]
         marker = "> " if i == selected_game else "  "
         menu_text += marker + game["name"] + "\n"
 
@@ -1018,6 +1260,16 @@ def key_pressed(event):
 
     if command_mode:
         handle_command_input(event)
+        return
+
+    if current_screen == "media_prompt":
+        key = event.keysym.lower()
+
+        if key in ("y", "return"):
+            launch_pending_media()
+        elif key in ("n", "escape"):
+            dismiss_media_prompt()
+
         return
 
     # F is a screen action in v0.22. Other alphabetic keys still open

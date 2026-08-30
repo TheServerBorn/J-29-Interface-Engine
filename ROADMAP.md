@@ -424,6 +424,10 @@ Before v1.0 release, the master cross-platform regression must include real end-
 
 # v0.26 — Physical Media System
 
+### Status
+
+**IN PROGRESS — INITIAL DETECTION READY FOR VALIDATION**
+
 ### Goal
 
 Bring physical interaction back to digital game libraries.
@@ -455,6 +459,21 @@ Example:
     [Y/N]
 
 Physical media may represent a game without necessarily storing the complete game itself.
+
+### Initial v0.26 checkpoint
+
+- Cross-platform mounted-volume detection foundation
+- Newly inserted media polling without blocking the terminal UI
+- Single recognizable ROM on inserted media produces the in-character `MEDIA DETECTED` prompt
+- Y/Enter launches through the existing emulator engine; N/Esc ignores the media
+- Multi-game collections and formal J-29 media descriptors remain deferred to v0.27
+- Media removal detection is implemented as a non-blocking status event
+- Simultaneous insertions are queued and presented one at a time
+- Physical-media monitoring cannot crash the terminal if an OS/device query fails
+- Removal during an active prompt safely returns to the prior screen
+- Removed queued media is discarded before it can prompt
+- Launch is rejected if the media disappears before confirmation
+- Reinsertion is treated as a new media event
 
 ---
 
