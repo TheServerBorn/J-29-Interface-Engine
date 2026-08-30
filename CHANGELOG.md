@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.21 — Game Metadata (development)
+
+- Added structured game metadata records in `engine/games.py`.
+- Preserved backwards compatibility with existing `name`, `path`, and `folder` entries.
+- Added platform, year, genre, developer, publisher, launch type, executable path, ROM path, emulator, Steam ID, and favorite fields.
+- Added simple boolean/year normalization and sensible metadata fallbacks.
+- Expanded `games.ini` and `games.example.ini` with v0.21 metadata examples.
+- Added a Terminal Shell program-information screen for selected games.
+- Game entries now open metadata details before launch.
+- Added explicit `ENTER RUN` / `ESC BACK` controls on the metadata screen.
+- Returning from metadata preserves the previous library folder and selection.
+
 All notable development milestones for the J29 Terminal Engine will be documented here.
 
 The project currently uses small development versions so each stable milestone can be tested, preserved, and documented before moving forward.
