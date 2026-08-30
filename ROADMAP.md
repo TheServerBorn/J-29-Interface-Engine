@@ -287,7 +287,9 @@ Navigation will support:
 
 Replace simple name/path entries with structured game information.
 
-Implemented metadata foundation:
+Status: **COMPLETE**
+
+Completed:
 
 - Stable game ID from INI section
 - Title
@@ -301,14 +303,12 @@ Implemented metadata foundation:
 - ROM path
 - Emulator/profile identifier
 - Steam ID
-- Favorite status
+- Favorite metadata field reserved for later state integration
 - Backwards compatibility with existing name/path/folder entries
-
-Next v0.21 work:
-
-- Metadata detail view in the Terminal shell
-- Metadata-aware launch routing
-- Validation/fallback behavior for incomplete entries
+- Terminal metadata detail view
+- Explicit launch action from the detail view
+- Return to the previous library folder and selection after viewing/launching
+- Fallback display behavior for incomplete metadata
 
 ---
 
@@ -318,12 +318,20 @@ Next v0.21 work:
 
 Allow users to mark frequently used games as favorites.
 
-Planned features:
+Implementation status: **READY FOR VALIDATION**
 
-- Add favorite
-- Remove favorite
-- Favorites view
-- Favorites command
+Implemented in the v0.22 branch:
+
+- Persistent favorites stored outside `games.ini`
+- Add favorite from Program Information with `F`
+- Remove favorite from Program Information with `F`
+- Favorites view on the main menu
+- Remove directly from Favorites with `F`
+- `FAVORITES` / `FAV` command
+- Favorites open the existing v0.21 Program Information screen before launch
+- Favorites survive application restart
+
+Validation is required before v0.22 is marked complete.
 
 ---
 
