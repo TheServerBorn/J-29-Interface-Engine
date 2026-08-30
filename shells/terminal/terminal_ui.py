@@ -1156,7 +1156,8 @@ def key_pressed(event):
 
             if not engine.launch_game(selected_game_record):
                 show_temporary_status(
-                    "PROGRAM NOT AVAILABLE"
+                    engine.get_last_launch_error()
+                    or "PROGRAM NOT AVAILABLE"
                 )
 
         elif event.keysym == "Escape":

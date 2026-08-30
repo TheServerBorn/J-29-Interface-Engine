@@ -371,21 +371,56 @@ The engine handles launching.
 
 # v0.25 — Emulator Support
 
+### Status
+
+**COMPLETE**
+
 ### Goal
 
-Allow ROMs to launch automatically through configured emulators.
+Allow ROMs to be discovered and launched automatically through configured or detected emulators.
 
-Example:
+### Completed Work
 
-    Platform: SNES
-    ROM: SuperMarioWorld.sfc
-    Emulator: RetroArch
+- Automatic ROM discovery from configured library roots
+- Platform inference from common ROM folder names
+- Stable auto-generated ROM records
+- Manual `games.ini` ROM entries override discovered duplicates
+- Automatic RetroArch core selection by platform
+- Installed RetroArch core detection with ordered fallback candidates
+- Visible launch diagnostics for missing cores/emulators/unsupported platforms
+- Standalone emulator auto-detection foundation:
+  - PS2 → PCSX2
+  - PS3 → RPCS3
+  - GameCube/Wii → Dolphin
+  - PSP → PPSSPP
+- Cross-platform executable lookup and platform-specific paths kept inside engine/config layers
+- Shell remains emulator-agnostic
 
-The user selects the game.
+### Validated
 
-The engine determines how to launch it.
+Real Windows validation completed for automatic discovery and launch on:
 
----
+- SNES
+- NES
+- Nintendo 64
+- GBA
+- GBC
+- Sega Genesis
+
+Validated behaviors include:
+
+- Games appear without manual `games.ini` entries
+- Correct RetroArch core is selected from installed cores
+- Games launch successfully
+- Fullscreen behavior is handled by emulator configuration
+- J-29 remains running and returns to the selected Program Information screen after emulator exit
+
+### Release-Candidate Revalidation
+
+Standalone emulator support for PCSX2, RPCS3, Dolphin, and PPSSPP is implemented and synthetic-tested but was not field-tested during v0.25 because matching emulator/ROM test assets were not available.
+
+Before v1.0 release, the master cross-platform regression must include real end-to-end validation of these standalone profiles where supported test media is available. Any unsupported or unavailable platform at release must be documented explicitly.
+
 
 # v0.26 — Physical Media System
 

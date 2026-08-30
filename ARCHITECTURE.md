@@ -418,3 +418,18 @@ Development will continue using:
 > Big vision. Small versions. Stable checkpoints.
 
 The immediate priority remains delivering a stable v1.0 J-29 Terminal experience.
+
+## v0.25 Emulator Layer
+
+ROM launching is handled by `engine/emulators.py`. Shells provide a game
+record to the engine; they do not construct emulator command lines.
+
+`config/emulators.ini` maps emulator profile IDs and platforms to
+OS-specific executables and argument templates. This keeps Windows, Linux,
+and macOS differences out of the shell and allows emulator configuration
+without modifying source code.
+
+
+## Standalone emulator auto-detection
+
+For PS2, PS3, GameCube/Wii, and PSP, the engine prefers dedicated emulator detection (PCSX2, RPCS3, Dolphin, PPSSPP) before RetroArch. Explicit emulator profiles remain the highest-priority override. Shell code remains emulator-agnostic.

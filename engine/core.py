@@ -7,7 +7,7 @@ from engine.steam import discover_steam_games
 from engine.roms import discover_rom_games
 from engine.game_state import load_game_state, save_game_state
 from engine.launcher import launch_program, launch_steam_app
-from engine.emulators import launch_rom
+from engine.emulators import launch_rom_with_status
 from engine.config import load_identity, load_settings
 from engine.system_info import (
     get_cpu_name,
@@ -18,6 +18,12 @@ from engine.system_info import (
 
 
 class J29Engine:
+    def __init__(self):
+        self._last_launch_error = ""
+
+    def get_last_launch_error(self):
+        return self._last_launch_error
+
     def get_games(self):
         configured_games = load_games()
         steam_games = discover_steam_games()
@@ -115,21 +121,31 @@ class J29Engine:
         save_game_state(state)
 
     def launch_game(self, game):
+        self._last_launch_error = ""
+
         if not game:
+            self._last_launch_error = "PROGRAM RECORD NOT AVAILABLE"
             return False
 
         launch_type = str(game.get("launch_type", "EXECUTABLE")).upper()
 
         if launch_type == "STEAM":
             launched = launch_steam_app(game.get("steam_id"))
+            if not launched:
+                self._last_launch_error = "STEAM LAUNCH FAILED"
         elif launch_type == "EXECUTABLE":
             launched = launch_program(
                 game.get("executable_path") or game.get("path")
             )
+            if not launched:
+                self._last_launch_error = "PROGRAM NOT AVAILABLE"
         elif launch_type == "ROM":
-            launched = launch_rom(game)
+            launched, detail = launch_rom_with_status(game)
+            if not launched:
+                self._last_launch_error = detail
         else:
             launched = False
+            self._last_launch_error = f"UNSUPPORTED LAUNCH TYPE: {launch_type}"
 
         if launched and game.get("id"):
             self.record_recent_game(game["id"])

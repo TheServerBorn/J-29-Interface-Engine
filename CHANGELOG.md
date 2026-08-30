@@ -1,19 +1,40 @@
 # Changelog
 
-## v0.25 — Emulator Support (READY FOR VALIDATION)
+## v0.25 — Emulator Support — COMPLETE
 
 ### Added
 - Automatic ROM library discovery from configured ROM roots.
 - Platform inference from common ROM folder names.
 - Stable generated ROM IDs and normal J-29 metadata records.
 - Manual ROM entries override auto-discovered records with the same ROM path.
-- Conservative game-file filtering to avoid BIOS/artwork/save-file noise.
-- Automatic RetroArch core selection by platform through the `{core}` token.
+- Conservative game-file filtering to avoid artwork/save-file noise.
+- Automatic RetroArch core selection by platform.
+- Installed-core detection with ordered fallback candidates.
+- Expanded fallback coverage across supported classic systems.
+- Visible diagnostics for missing cores, missing emulators, and unsupported profiles.
+- Standalone emulator auto-detection foundation for PCSX2, RPCS3, Dolphin, and PPSSPP.
+- Common Windows, Linux, and macOS executable lookup paths plus PATH lookup.
 
-### Validation
-- SNES DOOM launch through RetroArch/Snes9x validated on Windows.
-- Fullscreen launch and return-to-J-29 state retention validated.
-- Automatic ROM discovery now requires real-library validation before v0.25 is COMPLETE.
+### Real-World Validation
+- Automatic ROM discovery validated against the active ROM library.
+- SNES launch validated.
+- NES launch validated.
+- Nintendo 64 launch validated.
+- GBA launch validated.
+- GBC launch validated.
+- Sega Genesis launch validated.
+- Return-to-J-29 state retention validated after emulator exit.
+- Multiple SNES titles validated.
+- Manual DOOM entry removed from `games.ini`; DOOM continued to appear and launch through automatic discovery.
+
+### Deferred Release-Candidate Revalidation
+- PCSX2 / PS2
+- RPCS3 / PS3
+- Dolphin / GameCube and Wii
+- PPSSPP / PSP
+
+These standalone paths are implemented and synthetic-tested but were not field-tested during v0.25 because matching emulator/ROM test assets were not available. They must be included in the final release-candidate regression where supported test media is available. Any remaining unsupported platform must be documented explicitly.
+
 
 
 ## v0.23 — Recent Games (validation build)
