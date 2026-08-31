@@ -16,16 +16,102 @@ def _media_descriptor_id(volume, title, rom_path):
     seed = f"{volume}|{title}|{rom_path}".casefold()
     return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:12].upper()
 
+def _metadata_rom_game(volume, descriptor, title, platform_name, rom_value, item_seed=""):
+    if not title or not rom_value:
+        return None, {
+            "valid": False,
+            "reason": "MEDIA METADATA REQUIRES TITLE AND ROM",
+        }
+
+    # Metadata files may be authored on a different OS, so accept either
+    # slash style instead of interpreting the raw string as an OS-native Path.
+    rom_parts = [part for part in rom_value.replace("\\", "/").split("/") if part]
+    rom_path = volume.joinpath(*rom_parts).resolve()
+    volume_resolved = volume.resolve()
+
+    try:
+        rom_path.relative_to(volume_resolved)
+    except ValueError:
+        return None, {
+            "valid": False,
+            "reason": "MEDIA ROM PATH OUTSIDE VOLUME",
+            "requested_rom": rom_value,
+            "resolved_rom": str(rom_path),
+        }
+
+    if not rom_path.is_file():
+        return None, {
+            "valid": False,
+            "reason": "MEDIA ROM NOT FOUND",
+            "requested_rom": rom_value,
+            "resolved_rom": str(rom_path),
+        }
+
+    if not platform_name:
+        platform_name = _platform_from_path(rom_path, volume) or "UNKNOWN"
+
+    media_id = _media_descriptor_id(
+        volume,
+        title,
+        f"{item_seed}|{rom_path}",
+    )
+    return {
+        "id": "MEDIA_" + media_id,
+        "name": title,
+        "title": title,
+        "folder": platform_name,
+        "platform": platform_name,
+        "launch_type": "ROM",
+        "rom_path": str(rom_path),
+        "path": str(rom_path),
+        "favorite": False,
+        "source": "PHYSICAL_MEDIA",
+        "media_metadata": str(descriptor),
+    }, None
+
+
+def _metadata_launch_key_game(volume, descriptor, title, platform_name, game_id, item_seed=""):
+    title = title or game_id
+    return {
+        "id": "MEDIAKEY_" + _media_descriptor_id(
+            volume,
+            title,
+            f"{item_seed}|{game_id}",
+        ),
+        "name": title,
+        "title": title,
+        "folder": platform_name or "MEDIA",
+        "platform": platform_name,
+        "launch_type": "LIBRARY",
+        "target_game_id": game_id,
+        "favorite": False,
+        "source": "PHYSICAL_MEDIA",
+        "media_metadata": str(descriptor),
+    }
+
+
+def _collection_sections(parser):
+    """Return ordered collection-item sections from a J-29 metadata file."""
+    sections = []
+    for name in parser.sections():
+        normalized = name.strip().upper()
+        if normalized.startswith("ITEM_") or normalized.startswith("COLLECTION_ITEM_"):
+            sections.append(name)
+    return sections
+
+
 def read_media_metadata(volume):
     volume = Path(volume)
     descriptor = volume / MEDIA_METADATA_FILENAME
     if not descriptor.is_file():
         return None
+
     parser = configparser.ConfigParser()
     try:
         parser.read(descriptor, encoding="utf-8")
     except (OSError, configparser.Error):
         return {"valid": False, "reason": "INVALID MEDIA METADATA"}
+
     if not parser.has_section("J29_MEDIA"):
         return {"valid": False, "reason": "J29_MEDIA SECTION NOT FOUND"}
 
@@ -36,24 +122,84 @@ def read_media_metadata(volume):
     game_id = section.get("game_id", "").strip()
     rom_value = section.get("rom", "").strip()
 
+    if media_type == "COLLECTION":
+        collection_title = title or "SOFTWARE COLLECTION"
+        item_sections = _collection_sections(parser)
+        if not item_sections:
+            return {
+                "valid": False,
+                "type": media_type,
+                "reason": "COLLECTION CONTAINS NO ITEMS",
+            }
+
+        items = []
+        for index, item_section_name in enumerate(item_sections, start=1):
+            item = parser[item_section_name]
+            item_title = item.get("title", "").strip()
+            item_platform = item.get("platform", "").strip().upper()
+            item_game_id = item.get("game_id", "").strip()
+            item_rom = item.get("rom", "").strip()
+            item_seed = item_section_name
+
+            # Launch-key entries intentionally win if both game_id and rom
+            # are supplied, matching single-game media behavior.
+            if item_game_id:
+                game = _metadata_launch_key_game(
+                    volume,
+                    descriptor,
+                    item_title,
+                    item_platform,
+                    item_game_id,
+                    item_seed,
+                )
+            elif item_title and item_rom:
+                game, error = _metadata_rom_game(
+                    volume,
+                    descriptor,
+                    item_title,
+                    item_platform,
+                    item_rom,
+                    item_seed,
+                )
+                if error:
+                    error.update({
+                        "type": media_type,
+                        "reason": f"COLLECTION ITEM {index}: {error['reason']}",
+                    })
+                    return error
+            else:
+                return {
+                    "valid": False,
+                    "type": media_type,
+                    "reason": (
+                        f"COLLECTION ITEM {index} REQUIRES GAME_ID "
+                        "OR TITLE AND ROM"
+                    ),
+                }
+
+            items.append(game)
+
+        return {
+            "valid": True,
+            "type": media_type,
+            "mode": "COLLECTION",
+            "title": collection_title,
+            "items": items,
+        }
+
     if media_type != "GAME":
         return {"valid": False, "reason": f"UNSUPPORTED MEDIA TYPE: {media_type}"}
 
     # Launch-key mode: the physical medium represents an existing J-29
     # library entry. This intentionally takes precedence if both fields exist.
     if game_id:
-        game = {
-            "id": "MEDIAKEY_" + _media_descriptor_id(volume, title or game_id, game_id),
-            "name": title or game_id,
-            "title": title or game_id,
-            "folder": platform_name or "MEDIA",
-            "platform": platform_name,
-            "launch_type": "LIBRARY",
-            "target_game_id": game_id,
-            "favorite": False,
-            "source": "PHYSICAL_MEDIA",
-            "media_metadata": str(descriptor),
-        }
+        game = _metadata_launch_key_game(
+            volume,
+            descriptor,
+            title,
+            platform_name,
+            game_id,
+        )
         return {
             "valid": True,
             "type": media_type,
@@ -67,41 +213,16 @@ def read_media_metadata(volume):
             "reason": "MEDIA METADATA REQUIRES GAME_ID OR TITLE AND ROM",
         }
 
-    # Metadata files may be authored on a different OS, so accept either
-    # slash style instead of interpreting the raw string as an OS-native Path.
-    rom_parts = [part for part in rom_value.replace("\\", "/").split("/") if part]
-    rom_path = volume.joinpath(*rom_parts).resolve()
-    volume_resolved = volume.resolve()
+    game, error = _metadata_rom_game(
+        volume,
+        descriptor,
+        title,
+        platform_name,
+        rom_value,
+    )
+    if error:
+        return error
 
-    try:
-        rom_path.relative_to(volume_resolved)
-    except ValueError:
-        return {
-            "valid": False,
-            "reason": "MEDIA ROM PATH OUTSIDE VOLUME",
-            "requested_rom": rom_value,
-            "resolved_rom": str(rom_path),
-        }
-
-    if not rom_path.is_file():
-        return {
-            "valid": False,
-            "reason": "MEDIA ROM NOT FOUND",
-            "requested_rom": rom_value,
-            "resolved_rom": str(rom_path),
-        }
-
-    if not platform_name:
-        platform_name = _platform_from_path(rom_path, volume) or "UNKNOWN"
-
-    game = {
-        "id": "MEDIA_" + _media_descriptor_id(volume, title, rom_path),
-        "name": title, "title": title, "folder": platform_name,
-        "platform": platform_name, "launch_type": "ROM",
-        "rom_path": str(rom_path), "path": str(rom_path),
-        "favorite": False, "source": "PHYSICAL_MEDIA",
-        "media_metadata": str(descriptor),
-    }
     return {
         "valid": True,
         "type": media_type,
@@ -406,11 +527,18 @@ def inspect_media(volume_root):
 
     metadata = read_media_metadata(volume_root)
     if metadata is not None:
+        items = metadata.get("items") or []
         return {
             "volume": str(volume_root),
             "volume_name": volume_root.name or str(volume_root),
-            "candidate_count": 1 if metadata.get("valid") else 0,
+            "candidate_count": (
+                len(items)
+                if metadata.get("valid") and metadata.get("type") == "COLLECTION"
+                else (1 if metadata.get("valid") else 0)
+            ),
             "game": metadata.get("game"),
+            "collection": items,
+            "collection_title": metadata.get("title", ""),
             "metadata": metadata,
             "detection_method": "J29_METADATA",
         }
@@ -455,6 +583,21 @@ class MediaMonitor:
 
     def __init__(self):
         self._snapshot = snapshot_media()
+
+    def present(self):
+        """Return media already mounted when J-29 starts.
+
+        The monitor normally treats its initial snapshot as the baseline so
+        existing volumes do not generate false insertion events. This helper
+        lets the engine explicitly inspect that baseline at startup without
+        changing normal hot-plug behavior.
+        """
+        current = snapshot_media()
+        self._snapshot = current
+        return [
+            inspect_media(current[key])
+            for key in sorted(current)
+        ]
 
     def poll(self):
         current = snapshot_media()

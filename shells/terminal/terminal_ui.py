@@ -404,7 +404,10 @@ def update_footer():
         set_footer("ESC BACK")
 
     elif current_screen == "media_prompt":
-        set_footer("Y/ENTER LOAD   N/ESC IGNORE")
+        set_footer("Y/ENTER OPEN   N/ESC IGNORE")
+
+    elif current_screen == "media_collection":
+        set_footer("↑↓ MOVE   ENTER RUN   ESC CLOSE")
 
     else:
         set_footer("")
@@ -443,8 +446,74 @@ def clear_current_screen():
     elif current_screen == "media_prompt":
         draw_media_prompt()
 
+    elif current_screen == "media_collection":
+        draw_media_collection()
+
 def _same_volume(left, right):
     return str(left or "").rstrip("\\/").casefold() == str(right or "").rstrip("\\/").casefold()
+
+
+def _media_key(volume):
+    return str(volume or "").rstrip("\\/").casefold()
+
+
+def _remember_available_media(media):
+    volume = media.get("volume")
+    if volume:
+        available_media[_media_key(volume)] = media
+
+
+def _forget_available_media(volume):
+    available_media.pop(_media_key(volume), None)
+
+
+def _current_available_media():
+    if not available_media:
+        return None
+    # dicts preserve insertion order; the newest inserted medium is last.
+    return next(reversed(available_media.values()))
+
+
+def _is_recognized_media(media):
+    """Avoid treating unrelated fixed/data volumes as J-29 physical media."""
+    if not media:
+        return False
+    if media.get("metadata") is not None:
+        return True
+    if media.get("game"):
+        return True
+    if media.get("collection"):
+        return True
+    return False
+
+
+def scan_initial_physical_media():
+    """Register recognized media that was already mounted before J-29 boot."""
+    global selected_option
+
+    try:
+        present = engine.get_present_media()
+    except Exception:
+        present = []
+
+    changed = False
+    for media in present:
+        if not _is_recognized_media(media):
+            continue
+
+        key = _media_key(media.get("volume"))
+        if key and key not in available_media:
+            _remember_available_media(media)
+            changed = True
+
+    # If boot is disabled, the main menu may already be visible. Redraw it so
+    # PHYSICAL MEDIA appears immediately. During the normal boot sequence, the
+    # eventual main-menu draw will pick up available_media automatically.
+    if changed and current_screen == "main":
+        options = get_main_menu_options()
+        if options:
+            selected_option = min(selected_option, len(options) - 1)
+        draw_main_menu()
 
 
 def _remove_queued_media(volume):
@@ -463,6 +532,7 @@ def handle_removed_media(media):
     name = media.get("volume_name", "MEDIA")
 
     _remove_queued_media(volume)
+    _forget_available_media(volume)
 
     if pending_media and _same_volume(pending_media.get("volume"), volume):
         pending_media = None
@@ -472,6 +542,15 @@ def handle_removed_media(media):
             duration=3000
         )
         return
+
+    if current_screen == "main":
+        # Remove the dynamic PHYSICAL MEDIA entry immediately when the last
+        # mounted medium disappears.
+        options = get_main_menu_options()
+        if options:
+            global selected_option
+            selected_option = min(selected_option, len(options) - 1)
+        draw_main_menu()
 
     if current_screen != "media_prompt":
         show_temporary_status(
@@ -485,9 +564,24 @@ def draw_media_prompt():
         return
 
     game = pending_media.get("game")
+    metadata = pending_media.get("metadata") or {}
     volume_name = pending_media.get("volume_name", "REMOVABLE MEDIA")
 
-    if game:
+    if metadata.get("valid") and metadata.get("type") == "COLLECTION":
+        title = (
+            pending_media.get("collection_title")
+            or metadata.get("title")
+            or "SOFTWARE COLLECTION"
+        )
+        count = len(pending_media.get("collection") or [])
+        set_menu(
+            "MEDIA DETECTED\n\n"
+            f"{title}\n"
+            f"{count} PROGRAM{'S' if count != 1 else ''}\n\n"
+            "OPEN COLLECTION?\n"
+            "[Y/N]"
+        )
+    elif game:
         platform_name = game.get("platform") or "UNKNOWN FORMAT"
         set_menu(
             "MEDIA DETECTED\n\n"
@@ -498,7 +592,6 @@ def draw_media_prompt():
         )
     else:
         count = pending_media.get("candidate_count", 0)
-        metadata = pending_media.get("metadata") or {}
 
         if metadata and not metadata.get("valid", True):
             detail = metadata.get("reason", "INVALID J-29 MEDIA METADATA")
@@ -519,6 +612,89 @@ def draw_media_prompt():
 
     update_footer()
 
+
+def show_media_collection(reset_selection=True):
+    global current_screen, selected_media_item
+
+    if not pending_media:
+        return
+
+    items = pending_media.get("collection") or []
+    if not items:
+        return
+
+    if reset_selection:
+        selected_media_item = 0
+    else:
+        selected_media_item = max(0, min(selected_media_item, len(items) - 1))
+
+    current_screen = "media_collection"
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "          PHYSICAL MEDIA\n"
+        "========================================"
+    )
+    draw_media_collection()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_collection():
+    if not pending_media:
+        return
+
+    items = pending_media.get("collection") or []
+    title = pending_media.get("collection_title") or "SOFTWARE COLLECTION"
+
+    if not items:
+        set_menu(f"{title}\n\nNO PROGRAMS AVAILABLE")
+        update_footer()
+        return
+
+    capacity = _list_capacity(header_lines=2)
+    start, end = _visible_list_window(items, selected_media_item, capacity)
+    menu_text = f"{title} {_range_status(start, end, len(items))}\n\n"
+
+    for i in range(start, end):
+        game = items[i]
+        marker = "> " if i == selected_media_item else "  "
+        platform_name = game.get("platform") or "MEDIA"
+        name = game.get("title") or game.get("name") or game.get("target_game_id") or "PROGRAM"
+        menu_text += f"{marker}{name} [{platform_name}]\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def launch_selected_media_item():
+    if not pending_media:
+        return
+
+    items = pending_media.get("collection") or []
+    if not items:
+        return
+
+    index = max(0, min(selected_media_item, len(items) - 1))
+    game = items[index]
+
+    rom_path = game.get("rom_path") or game.get("path")
+    if rom_path and not Path(rom_path).exists():
+        show_media_collection(reset_selection=False)
+        show_temporary_status("MEDIA PROGRAM NOT AVAILABLE")
+        return
+
+    def collection_launch_failed():
+        show_media_collection(reset_selection=False)
+        show_temporary_status(
+            engine.get_last_launch_error()
+            or "MEDIA PROGRAM NOT AVAILABLE"
+        )
+
+    launch_game_with_transition(
+        game,
+        on_success=lambda: show_media_collection(reset_selection=False),
+        on_failure=collection_launch_failed,
+    )
 
 def show_media_prompt(media):
     global current_screen, pending_media
@@ -622,6 +798,11 @@ def launch_pending_media():
     if not pending_media:
         return
 
+    metadata = pending_media.get("metadata") or {}
+    if metadata.get("valid") and metadata.get("type") == "COLLECTION":
+        show_media_collection()
+        return
+
     game = pending_media.get("game")
     if not game:
         dismiss_media_prompt()
@@ -665,6 +846,7 @@ def poll_physical_media():
             events = engine.poll_media_events()
             for media in events.get("inserted", []):
                 volume = media.get("volume")
+                _remember_available_media(media)
 
                 already_pending = (
                     pending_media
@@ -736,12 +918,14 @@ selected_option = 0
 selected_game = 0
 current_library_folder = None
 selected_game_record = None
+selected_media_item = 0
 detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
 screen_history = []
 pending_media = None
 media_queue = []
+available_media = {}
 media_poll_active = True
 
 def remember_current_screen():
@@ -821,24 +1005,46 @@ def show_main_menu():
     )
 
 
-def draw_main_menu():
-
+def get_main_menu_options():
     options = [
-        "GAME LIBRARY",
-        "FAVORITES",
-        "RECENT GAMES",
-        "SYSTEM INFO",
-        "EXIT"
+        ("GAME LIBRARY", "games"),
+        ("FAVORITES", "favorites"),
+        ("RECENT GAMES", "recent"),
     ]
 
+    # Physical media is contextual: it exists only while at least one
+    # recognized mounted medium is still present. Dismissing the automatic
+    # insertion prompt therefore never makes the medium unreachable.
+    if available_media:
+        options.append(("PHYSICAL MEDIA", "physical_media"))
+
+    options.extend([
+        ("SYSTEM INFO", "system"),
+        ("EXIT", "exit"),
+    ])
+    return options
+
+
+def reopen_current_physical_media():
+    media = _current_available_media()
+    if not media:
+        show_temporary_status("NO PHYSICAL MEDIA DETECTED", duration=2000)
+        draw_main_menu()
+        return
+    show_media_prompt(media)
+
+
+def draw_main_menu():
+
+    options = get_main_menu_options()
     menu_text = ""
 
-    for i, option in enumerate(options):
+    for i, (label, _action) in enumerate(options):
 
         if i == selected_option:
-            menu_text += "> " + option + "\n"
+            menu_text += "> " + label + "\n"
         else:
-            menu_text += "  " + option + "\n"
+            menu_text += "  " + label + "\n"
 
     set_menu(menu_text)
 
@@ -1341,7 +1547,7 @@ def show_command_help():
 
 def key_pressed(event):
 
-    global selected_option, selected_game, command_mode
+    global selected_option, selected_game, selected_media_item, command_mode
     global detail_parent_screen, detail_parent_folder, detail_parent_index
 
     if command_mode:
@@ -1354,6 +1560,23 @@ def key_pressed(event):
         if key in ("y", "return"):
             launch_pending_media()
         elif key in ("n", "escape"):
+            dismiss_media_prompt()
+
+        return
+
+    if current_screen == "media_collection":
+        items = pending_media.get("collection", []) if pending_media else []
+        key = event.keysym.lower()
+
+        if key == "up" and items:
+            selected_media_item = (selected_media_item - 1) % len(items)
+            draw_media_collection()
+        elif key == "down" and items:
+            selected_media_item = (selected_media_item + 1) % len(items)
+            draw_media_collection()
+        elif key == "return" and items:
+            launch_selected_media_item()
+        elif key in ("escape", "n"):
             dismiss_media_prompt()
 
         return
@@ -1380,42 +1603,39 @@ def key_pressed(event):
         return
 
     if current_screen == "main":
+        options = get_main_menu_options()
 
         if event.keysym == "Up":
-            selected_option -= 1
-
-            if selected_option < 0:
-                selected_option = 4
-
+            selected_option = (selected_option - 1) % len(options)
             draw_main_menu()
 
         elif event.keysym == "Down":
-            selected_option += 1
-
-            if selected_option > 4:
-                selected_option = 0
-
+            selected_option = (selected_option + 1) % len(options)
             draw_main_menu()
 
         elif event.keysym == "Return":
+            action = options[selected_option][1]
 
-            if selected_option == 0:
+            if action == "games":
                 remember_current_screen()
                 show_game_library()
 
-            elif selected_option == 1:
+            elif action == "favorites":
                 remember_current_screen()
                 show_favorites()
 
-            elif selected_option == 2:
+            elif action == "recent":
                 remember_current_screen()
                 show_recent()
 
-            elif selected_option == 3:
+            elif action == "physical_media":
+                reopen_current_physical_media()
+
+            elif action == "system":
                 remember_current_screen()
                 show_system_info()
 
-            elif selected_option == 4:
+            elif action == "exit":
                 root.destroy()
 
     elif current_screen == "games":
@@ -1618,6 +1838,11 @@ def run():
         show_main_menu()
 
     blink_cursor()
+
+    # Detect recognized media that was already mounted before J-29 started.
+    # This populates the dynamic PHYSICAL MEDIA menu entry without requiring
+    # the user to remove/reinsert the medium after boot.
+    root.after(250, scan_initial_physical_media)
 
     # Start the physical-media polling chain. poll_physical_media() schedules
     # its own next run every two seconds, but it must be invoked once here

@@ -176,6 +176,9 @@ class J29Engine:
 
         return launched
 
+    def get_present_media(self):
+        return self._media_monitor.present()
+
     def poll_media_events(self):
         return self._media_monitor.poll()
 
