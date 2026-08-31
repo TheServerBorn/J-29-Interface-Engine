@@ -1,4 +1,47 @@
-# Changelog
+## v0.27 — Media Metadata & Collections — COMPLETE
+
+### Added
+- Standard `j29-media.ini` metadata format for J-29 physical media.
+- Self-contained game media with explicit ROM paths.
+- Metadata-only launch keys that resolve existing J-29 library entries by stable `game_id`.
+- Steam launch keys using existing `STEAM_<appid>` library IDs.
+- `type=COLLECTION` media containing multiple launchable entries.
+- Collection browser inside the Terminal Shell with keyboard navigation and repeated launching without closing the collection.
+- Dynamic `PHYSICAL MEDIA` main-menu entry while recognized media remains mounted.
+- Boot-time detection of already-inserted recognized J-29 media.
+- Example J-29 media configuration for single-game and collection formats.
+
+### Changed
+- Physical media now represents software rather than requiring the complete software payload to reside on the removable device.
+- `game_id` takes precedence when both a library target and local ROM path are defined.
+- Current mounted media can be reopened from the main menu without requiring physical reinsertion.
+- Main-menu navigation now supports dynamic entries safely instead of relying on fixed indexes.
+
+### Fixed
+- Metadata ROM paths now accept either Windows-style or portable path separators.
+- Missing metadata ROMs report the resolved expected path instead of a generic failure.
+- Failed physical-media launches restore the true media-prompt state so `ESC` / `N` works normally.
+- Hot removal from an open collection safely returns to the main menu.
+- Invalid collection `game_id` entries report failure without damaging collection state.
+- Media present before J-29 startup is now recognized during boot when it contains valid J-29 metadata or recognizable software.
+
+### Real Hardware Validation
+- Self-contained metadata + ROM media: PASS.
+- Metadata-only local ROM launch key: PASS.
+- Metadata-only Steam launch key: PASS.
+- Multi-entry collection media: PASS.
+- Launching multiple games while collection remains open: PASS.
+- Reopening mounted media through dynamic `PHYSICAL MEDIA`: PASS.
+- Dynamic menu removal after physical ejection: PASS.
+- Invalid collection library ID recovery: PASS.
+- Hot removal while inside collection: PASS.
+- Reinsertion after hot removal: PASS.
+- Boot with recognized physical media already inserted: PASS.
+
+### Significance
+J-29 physical media can now act as a self-contained software carrier, a lightweight physical launch key for software stored elsewhere, or a multi-program collection. The physical object is the interface; the underlying software may live on removable media, local storage, or Steam.
+
+---
 
 ## v0.26.1 — Universal Launch Transition — COMPLETE
 
@@ -16,8 +59,8 @@
 ### Validation
 - Universal launch transition validated successfully after v0.26 hardware
   validation.
-- Launch behavior confirmed substantially cleaner than exposing the previous
-  menu during emulator or Steam startup latency.
+- User confirmed the transition is substantially cleaner than exposing the
+  previous menu during emulator or Steam startup latency.
 
 ---
 
@@ -66,8 +109,6 @@
 - Selected entries stay visible and approximately centered during navigation.
 - Added stronger footer/bottom-screen safety.
 - Applied the same behavior to Game Library, Favorites, and Recent Games.
-- Visible range handling adapts to long lists without allowing entries to render
-  beneath the navigation/help bar.
 
 ### Validation
 - Real UI validation passed; long lists no longer disappear beneath the footer.
@@ -102,44 +143,8 @@
 - Sega Genesis: PASS.
 - RetroArch fullscreen launch and return to J-29 metadata screen: PASS.
 - Standalone PCSX2/RPCS3/Dolphin/PPSSPP real-world testing deferred to the final
-  release-candidate regression because matching local test cases were not
-  available during v0.25.
-
----
-
-## v0.24 — Steam Support — COMPLETE
-
-### Added
-- Cross-platform Steam installation discovery.
-- Windows Steam discovery through registry locations and common install paths.
-- macOS Steam discovery through the standard Application Support location.
-- Linux Steam discovery through standard and Flatpak locations.
-- Additional Steam libraries discovered through `libraryfolders.vdf`.
-- Installed games discovered through Steam `appmanifest_*.acf` files.
-- Steam games converted into normal J-29 game records with:
-  - stable `STEAM_<appid>` IDs
-  - Steam folder/category
-  - PC platform
-  - Steam launch type
-  - Steam App ID
-  - install path metadata
-- Manual configured games with the same Steam App ID take priority over
-  automatically discovered Steam records.
-- Cross-platform Steam URI launching.
-- Windows uses the native URI handler.
-- macOS uses `open`.
-- Linux uses `xdg-open`, with browser fallback where needed.
-- Steamworks Common Redistributables is filtered from the user-facing library.
-
-### Real Hardware Validation
-- Steam library auto-populated successfully on Windows.
-- Multiple real Steam titles were detected automatically.
-- Three different Steam games launched successfully.
-- Fullscreen game launch behavior validated.
-- Exiting a Steam game returned cleanly to the J-29 metadata screen.
-- Steamworks Common Redistributables filtering validated successfully.
-
----
+  release-candidate regression because matching local hardware/software test
+  cases were not available during v0.25.
 
 ---
 ## v0.23 — Recent Games (validation build)

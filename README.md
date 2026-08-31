@@ -4,8 +4,8 @@ A modular retro-computing interface engine for games, physical media, and fictio
 
 ## Project Status
 
-**Stable Development Release:** v0.23 — Recents 
-**Current Development:** v0.24 — Steam Support
+**Stable Development Release:** v0.27 — Media Metadata & Collections
+**Current Development:** v0.28 — Custom Audio
 
 J-29 began as a custom retro terminal launcher for the Callisto J-29 computer project.
 
@@ -28,6 +28,10 @@ Handles what the computer can do.
 Current Engine responsibilities include:
 
 - Game library loading
+- Game metadata and persistent library state
+- Steam discovery and launching
+- ROM discovery and emulator launching
+- Physical-media detection, metadata, launch keys, and collections
 - External program launching
 - CPU detection
 - Memory detection
@@ -251,39 +255,49 @@ The software can be used with:
 
 ---
 
-## Physical Media Vision
+## Physical Media
 
-One of the primary goals of J-29 is to bring physical interaction back to digital game libraries.
+Physical media is now a working core feature of J-29. The system is format-agnostic and can recognize supported media such as SD cards, USB storage, external drives, and other mounted removable media.
 
-Future physical media support will be format-agnostic.
+J-29 follows one central rule:
 
-Potential media include:
+> **Physical media represents software. It does not require the software to physically reside on that media.**
 
-- 3.5-inch floppy disks
-- SD cards
-- microSD cards
-- USB flash drives
-- External SSDs
-- External hard drives
-- Other removable storage
+A medium can work in three ways:
 
-J-29 will identify what the media represents rather than depending on a specific physical format.
+- **Self-contained media** — metadata plus the actual ROM/software payload.
+- **Launch key** — a tiny metadata file points to an existing J-29 library entry, including local ROMs or Steam titles.
+- **Collection media** — one physical object exposes multiple launchable programs through an in-terminal collection browser.
 
-A physical disk or storage device may act as a representation or key for software already installed digitally.
+Example single-game launch key:
 
-Example future interaction:
-
-```text
-MEDIA DETECTED
-
-DOOM
-
-LOAD GAME?
-
-[Y/N]
+```ini
+[J29_MEDIA]
+type=GAME
+title=HARVEST MOON
+platform=SNES
+game_id=ROM_SNES_6009C68D2439
 ```
 
-Physical media support is planned but is **not yet implemented** in the current development build.
+Example collection:
+
+```ini
+[J29_MEDIA]
+type=COLLECTION
+title=J-29 FAVORITES
+
+[ITEM_1]
+title=HARVEST MOON
+platform=SNES
+game_id=ROM_SNES_6009C68D2439
+
+[ITEM_2]
+title=MOONSTONE ISLAND
+platform=PC
+game_id=STEAM_1658150
+```
+
+When recognized media is mounted, a dynamic **PHYSICAL MEDIA** option appears on the main menu. Already-inserted recognized media is detected during J-29 startup, and removing the media removes the menu entry automatically.
 
 ---
 
@@ -438,7 +452,12 @@ Stable milestones are maintained through Git branches, commits, tags, and GitHub
 - **v0.22 — Favorites** ✅
 - **v0.23 — Recent Games**✅
 - **v0.24 — Steam Support** ✅
-- **v0.25 — Emulator Support**🚧
+- **v0.25 — Emulator Support** ✅
+- **v0.25.1 — Long-List Scrolling Polish** ✅
+- **v0.26 — Physical Media System** ✅
+- **v0.26.1 — Universal Launch Transition** ✅
+- **v0.27 — Media Metadata & Collections** ✅
+- **v0.28 — Custom Audio** 🚧
 
 Further milestones are documented in [`ROADMAP.md`](ROADMAP.md).
 
