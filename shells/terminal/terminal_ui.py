@@ -19,8 +19,16 @@ root.geometry("800x500")
 root.attributes("-fullscreen", settings["fullscreen"])
 
 def maintenance_mode(event=None):
+    engine.play_sound("access_granted")
     root.attributes("-fullscreen", False)
     root.config(cursor="")
+
+def shutdown_terminal(event=None):
+    # Give the short async shutdown tone a moment to start before Tk exits.
+    # This is intentionally tiny and does not affect normal navigation or
+    # external game-launch timing.
+    engine.play_sound("shutdown")
+    root.after(220, root.destroy)
 
 def terminal_mode(event=None):
     root.attributes("-fullscreen", True)
@@ -28,6 +36,7 @@ def terminal_mode(event=None):
 
 root.bind(f"<{settings['windowed_key']}>", maintenance_mode)
 root.bind(f"<{settings['fullscreen_key']}>", terminal_mode)
+root.protocol("WM_DELETE_WINDOW", shutdown_terminal)
 
 root.config(cursor="none")
 scanline_canvas = Canvas(
@@ -336,9 +345,10 @@ def execute_command():
         reboot_terminal()
 
     elif command == "SHUTDOWN":
-        root.destroy()
+        shutdown_terminal()
 
     else:
+        engine.play_sound("error")
         show_temporary_status("UNKNOWN COMMAND")
 
 def reboot_terminal():
@@ -772,10 +782,12 @@ def launch_game_with_transition(game, on_success=None, on_failure=None):
     # avoids exposing the previous menu during Steam/emulator startup latency.
     draw_launch_transition(game)
     root.update_idletasks()
+    engine.play_sound("launch")
 
     launched = engine.launch_game(game)
 
     if not launched:
+        engine.play_sound("error")
         if on_failure:
             on_failure()
         else:
@@ -847,6 +859,7 @@ def poll_physical_media():
             for media in events.get("inserted", []):
                 volume = media.get("volume")
                 _remember_available_media(media)
+                engine.play_sound("media_detected")
 
                 already_pending = (
                     pending_media
@@ -1461,6 +1474,7 @@ def start_boot_sequence():
 
     global current_screen
     current_screen = "boot"
+    engine.play_sound("boot")
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
     set_title(
     f"{identity['manufacturer'].upper()}\n"
@@ -1554,10 +1568,17 @@ def key_pressed(event):
         handle_command_input(event)
         return
 
+    if (
+        event.keysym in ("Up", "Down")
+        and current_screen in ("main", "games", "favorites", "recent", "media_collection")
+    ):
+        engine.play_sound("menu_move")
+
     if current_screen == "media_prompt":
         key = event.keysym.lower()
 
         if key in ("y", "return"):
+            engine.play_sound("select")
             launch_pending_media()
         elif key in ("n", "escape"):
             dismiss_media_prompt()
@@ -1615,6 +1636,7 @@ def key_pressed(event):
 
         elif event.keysym == "Return":
             action = options[selected_option][1]
+            engine.play_sound("select")
 
             if action == "games":
                 remember_current_screen()
@@ -1636,7 +1658,7 @@ def key_pressed(event):
                 show_system_info()
 
             elif action == "exit":
-                root.destroy()
+                shutdown_terminal()
 
     elif current_screen == "games":
 
@@ -1676,6 +1698,8 @@ def key_pressed(event):
 
             if not entries:
                 return
+
+            engine.play_sound("select")
 
             # Root directory:
             # Enter opens a folder
@@ -1765,6 +1789,7 @@ def key_pressed(event):
             if not favorite_games:
                 return
 
+            engine.play_sound("select")
             game = favorite_games[selected_game]
             detail_parent_screen = "favorites"
             detail_parent_folder = None
@@ -1799,6 +1824,7 @@ def key_pressed(event):
             if not recent_games:
                 return
 
+            engine.play_sound("select")
             game = recent_games[selected_game]
             detail_parent_screen = "recent"
             detail_parent_folder = None

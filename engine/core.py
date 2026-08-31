@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from engine.library import build_library
+from engine.audio import AudioManager
 from engine.theme import load_theme
 from engine.games import load_games
 from engine.steam import discover_steam_games
@@ -23,8 +24,28 @@ class J29Engine:
         self._last_launch_error = ""
         self._media_monitor = MediaMonitor()
 
+        settings = load_settings()
+        theme = load_theme(
+            f"themes/{settings['theme']}/theme.ini"
+        )
+        self._audio = AudioManager(settings=settings, theme=theme)
+
     def get_last_launch_error(self):
         return self._last_launch_error
+
+    def play_sound(self, event_name):
+        return self._audio.play(event_name)
+
+    def stop_audio(self):
+        self._audio.stop()
+
+    def reload_audio(self):
+        settings = load_settings()
+        theme = load_theme(
+            f"themes/{settings['theme']}/theme.ini"
+        )
+        self._audio.configure(settings=settings, theme=theme)
+
 
     def get_games(self):
         configured_games = load_games()

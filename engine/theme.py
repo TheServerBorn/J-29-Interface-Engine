@@ -1,8 +1,11 @@
+from pathlib import Path
+
 from engine.config import load_config
 
 
 def load_theme(theme_path="themes/callisto_green/theme.ini"):
-    config = load_config(theme_path)
+    theme_file = Path(theme_path)
+    config = load_config(theme_file)
 
     return {
         "name": config.get(
@@ -70,4 +73,18 @@ def load_theme(theme_path="themes/callisto_green/theme.ini"):
             "style",
             fallback="BLOCK"
         ),
+        # Keep audio presentation inside the theme. Each entry is resolved
+        # relative to the selected theme directory by AudioManager.
+        "sounds": {
+            "boot": config.get("AUDIO", "boot", fallback="sounds/boot.wav"),
+            "menu_move": config.get("AUDIO", "menu_move", fallback="sounds/menu_move.wav"),
+            "select": config.get("AUDIO", "select", fallback="sounds/select.wav"),
+            "error": config.get("AUDIO", "error", fallback="sounds/error.wav"),
+            "media_detected": config.get("AUDIO", "media_detected", fallback="sounds/media_detected.wav"),
+            "access_granted": config.get("AUDIO", "access_granted", fallback="sounds/access_granted.wav"),
+            "access_denied": config.get("AUDIO", "access_denied", fallback="sounds/access_denied.wav"),
+            "launch": config.get("AUDIO", "launch", fallback="sounds/launch.wav"),
+            "shutdown": config.get("AUDIO", "shutdown", fallback="sounds/shutdown.wav"),
+        },
+        "_theme_dir": str(theme_file.parent),
     }

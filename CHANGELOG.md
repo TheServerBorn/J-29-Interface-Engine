@@ -1,3 +1,34 @@
+## v0.28.0 — Custom Audio Foundation — TEST BUILD
+
+### Added
+- New engine-level `AudioManager` service in `engine/audio.py`.
+- Dependency-free asynchronous WAV playback for Windows, macOS, and Linux host environments.
+- Failure-safe audio behavior: missing files or unavailable host playback tools fall back to silence without interrupting J-29.
+- Runtime `enabled` and `master_volume` support using the existing `[AUDIO]` settings.
+- Cached PCM WAV volume scaling so theme sounds can honor J-29 master volume without a third-party audio library.
+- Theme-owned audio mappings under each theme's `[AUDIO]` section.
+- Reference Callisto sound set for boot, menu movement, selection, error, media detection, access granted, access denied, game launch, and shutdown.
+
+### Wired Events
+- Boot / reboot startup tone.
+- Menu movement feedback on navigable lists.
+- Selection feedback for menu, library, favorites, recent, and physical-media confirmation.
+- Error feedback for unknown commands and failed program launches.
+- Physical-media insertion acknowledgement.
+- Maintenance/windowed-mode access-granted tone.
+- Universal launch-transition tone before the existing launch engine dispatch.
+- Clean terminal shutdown tone.
+
+### Architecture
+- Audio remains an engine service while sound identity remains theme data.
+- Terminal UI requests semantic events such as `menu_move`, `media_detected`, and `launch`; it does not know filenames or playback backends.
+- `access_denied` is included in the theme/API now and is reserved for the secured maintenance authorization flow.
+
+### Status
+TEST BUILD — requires real J-29 hardware/audio validation before v0.28 is marked complete.
+
+---
+
 ## v0.27 — Media Metadata & Collections — COMPLETE
 
 ### Added
