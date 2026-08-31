@@ -471,6 +471,4 @@ Interfaces, configuration formats, internal APIs, Shell behavior, and feature or
 
 The Callisto Computer Systems setting, J-29 Terminal OS, and related fictional systems are used as the reference environment for development and demonstration of the Engine.
 
-The Callisto Computer Systems setting, J-29 Terminal OS, and related fictional systems are used as the reference environment for development and demonstration of the Engine.
-
 Interfaces, configuration formats, and internal APIs may change before version 1.0.
