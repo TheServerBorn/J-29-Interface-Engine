@@ -11,6 +11,7 @@ from engine.launcher import launch_program, launch_steam_app
 from engine.emulators import launch_rom_with_status
 from engine.config import load_identity, load_settings
 from engine.media import MediaMonitor, inspect_media
+from engine.media_creator import eligible_launch_key_games, preview_launch_key
 from engine.system_info import (
     get_cpu_name,
     get_memory_gb,
@@ -196,6 +197,12 @@ class J29Engine:
             self.record_recent_game(game["id"])
 
         return launched
+
+    def get_media_creator_games(self):
+        return eligible_launch_key_games(self.get_games())
+
+    def preview_media_launch_key(self, game):
+        return preview_launch_key(game)
 
     def get_present_media(self):
         return self._media_monitor.present()

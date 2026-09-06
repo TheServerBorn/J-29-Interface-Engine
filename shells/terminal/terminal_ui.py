@@ -419,6 +419,15 @@ def update_footer():
     elif current_screen == "media_collection":
         set_footer("↑↓ MOVE   ENTER RUN   ESC CLOSE")
 
+    elif current_screen == "media_tools":
+        set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
+
+    elif current_screen == "media_creator_games":
+        set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
+
+    elif current_screen == "media_creator_preview":
+        set_footer("ESC BACK")
+
     else:
         set_footer("")
 
@@ -458,6 +467,142 @@ def clear_current_screen():
 
     elif current_screen == "media_collection":
         draw_media_collection()
+
+    elif current_screen == "media_tools":
+        draw_media_tools()
+
+    elif current_screen == "media_creator_games":
+        draw_media_creator_games()
+
+    elif current_screen == "media_creator_preview":
+        draw_media_creator_preview()
+
+def get_media_tool_options():
+    return [
+        ("CREATE MEDIA", "create_media"),
+        ("BACK", "back"),
+    ]
+
+
+def show_media_tools():
+    global current_screen, selected_media_tool
+
+    current_screen = "media_tools"
+    selected_media_tool = 0
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "             MEDIA TOOLS\n"
+        "========================================"
+    )
+    draw_media_tools()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_tools():
+    options = get_media_tool_options()
+    menu_text = ""
+
+    for index, (label, _action) in enumerate(options):
+        marker = "> " if index == selected_media_tool else "  "
+        menu_text += marker + label + "\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def show_media_creator_games(reset_selection=True):
+    global current_screen, selected_creator_game, creator_selected_game
+    global creator_games
+
+    if reset_selection or not creator_games:
+        creator_games = engine.get_media_creator_games()
+
+    if reset_selection:
+        selected_creator_game = 0
+    elif creator_games:
+        selected_creator_game = max(
+            0,
+            min(selected_creator_game, len(creator_games) - 1),
+        )
+
+    creator_selected_game = None
+    current_screen = "media_creator_games"
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "            CREATE MEDIA\n"
+        "========================================"
+    )
+    draw_media_creator_games()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_creator_games():
+    entries = creator_games
+
+    if not entries:
+        set_menu(
+            "SELECT PROGRAM\n\n"
+            "NO ELIGIBLE LIBRARY PROGRAMS"
+        )
+        update_footer()
+        return
+
+    capacity = _list_capacity(header_lines=2)
+    start, end = _visible_list_window(
+        entries,
+        selected_creator_game,
+        capacity,
+    )
+    menu_text = (
+        "SELECT PROGRAM "
+        f"{_range_status(start, end, len(entries))}\n\n"
+    )
+
+    for index in range(start, end):
+        game = entries[index]
+        marker = "> " if index == selected_creator_game else "  "
+        title = game.get("title") or game.get("name") or "PROGRAM"
+        platform_name = game.get("platform") or game.get("folder") or "UNKNOWN"
+        menu_text += f"{marker}{title} [{platform_name}]\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def show_media_creator_preview(game):
+    global current_screen, creator_selected_game, creator_preview
+
+    creator_selected_game = game
+    creator_preview = engine.preview_media_launch_key(game)
+    current_screen = "media_creator_preview"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "        CREATE MEDIA — PREVIEW\n"
+        "========================================"
+    )
+    draw_media_creator_preview()
+
+
+def draw_media_creator_preview():
+    if not creator_preview:
+        set_menu("NO MEDIA PREVIEW AVAILABLE")
+        update_footer()
+        return
+
+    set_menu(
+        f"MEDIA TYPE ...... {creator_preview['media_type']}\n"
+        f"TITLE ........... {creator_preview['title']}\n"
+        f"PLATFORM ........ {creator_preview['platform']}\n"
+        f"TARGET .......... {creator_preview['target']}\n"
+        f"DESCRIPTOR ...... {creator_preview['status']}\n\n"
+        "NO MEDIA HAS BEEN WRITTEN\n"
+        "TARGET SELECTION IS NOT ENABLED IN THIS CHECKPOINT"
+    )
+    update_footer()
+
 
 def _same_volume(left, right):
     return str(left or "").rstrip("\\/").casefold() == str(right or "").rstrip("\\/").casefold()
@@ -885,7 +1030,7 @@ def poll_physical_media():
             # Physical-media monitoring must never crash the terminal.
             pass
 
-    root.after(2000, poll_physical_media)
+    root.after(500, poll_physical_media)
 
 
 def show_temporary_status(text, duration=5000):
@@ -932,6 +1077,11 @@ selected_game = 0
 current_library_folder = None
 selected_game_record = None
 selected_media_item = 0
+selected_media_tool = 0
+selected_creator_game = 0
+creator_selected_game = None
+creator_preview = None
+creator_games = []
 detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
@@ -1023,6 +1173,7 @@ def get_main_menu_options():
         ("GAME LIBRARY", "games"),
         ("FAVORITES", "favorites"),
         ("RECENT GAMES", "recent"),
+        ("MEDIA TOOLS", "media_tools"),
     ]
 
     # Physical media is contextual: it exists only while at least one
@@ -1562,6 +1713,7 @@ def show_command_help():
 def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
+    global selected_media_tool, selected_creator_game
     global detail_parent_screen, detail_parent_folder, detail_parent_index
 
     if command_mode:
@@ -1570,7 +1722,10 @@ def key_pressed(event):
 
     if (
         event.keysym in ("Up", "Down")
-        and current_screen in ("main", "games", "favorites", "recent", "media_collection")
+        and current_screen in (
+            "main", "games", "favorites", "recent", "media_collection",
+            "media_tools", "media_creator_games",
+        )
     ):
         engine.play_sound("menu_move")
 
@@ -1600,6 +1755,49 @@ def key_pressed(event):
         elif key in ("escape", "n"):
             dismiss_media_prompt()
 
+        return
+
+    if current_screen == "media_tools":
+        options = get_media_tool_options()
+
+        if event.keysym == "Up":
+            selected_media_tool = (selected_media_tool - 1) % len(options)
+            draw_media_tools()
+        elif event.keysym == "Down":
+            selected_media_tool = (selected_media_tool + 1) % len(options)
+            draw_media_tools()
+        elif event.keysym == "Return":
+            engine.play_sound("select")
+            action = options[selected_media_tool][1]
+            if action == "create_media":
+                show_media_creator_games()
+            else:
+                go_back()
+        elif event.keysym == "Escape":
+            go_back()
+
+        return
+
+    if current_screen == "media_creator_games":
+        entries = creator_games
+
+        if event.keysym == "Up" and entries:
+            selected_creator_game = (selected_creator_game - 1) % len(entries)
+            draw_media_creator_games()
+        elif event.keysym == "Down" and entries:
+            selected_creator_game = (selected_creator_game + 1) % len(entries)
+            draw_media_creator_games()
+        elif event.keysym == "Return" and entries:
+            engine.play_sound("select")
+            show_media_creator_preview(entries[selected_creator_game])
+        elif event.keysym == "Escape":
+            show_media_tools()
+
+        return
+
+    if current_screen == "media_creator_preview":
+        if event.keysym == "Escape":
+            show_media_creator_games(reset_selection=False)
         return
 
     # F is a screen action in v0.22. Other alphabetic keys still open
@@ -1649,6 +1847,10 @@ def key_pressed(event):
             elif action == "recent":
                 remember_current_screen()
                 show_recent()
+
+            elif action == "media_tools":
+                remember_current_screen()
+                show_media_tools()
 
             elif action == "physical_media":
                 reopen_current_physical_media()
@@ -1873,6 +2075,6 @@ def run():
     # Start the physical-media polling chain. poll_physical_media() schedules
     # its own next run every two seconds, but it must be invoked once here
     # when the Terminal UI starts.
-    root.after(1000, poll_physical_media)
+    root.after(500, poll_physical_media)
 
     root.mainloop()
