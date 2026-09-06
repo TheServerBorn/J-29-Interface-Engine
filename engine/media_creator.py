@@ -3,8 +3,9 @@
 v0.29 writes the same j29-media.ini format that the v0.27 reader already
 understands. Creator safety is intentionally stricter than normal media
 recognition: only clearly removable/writable mount locations are eligible for
-writes, the system volume is always rejected, and existing J-29 descriptors
-are never overwritten in this checkpoint.
+writes and the system volume is always rejected. Existing J-29 descriptors
+require an explicit two-step replacement workflow; unrelated media files are
+never modified by the creator.
 """
 
 from configparser import ConfigParser
@@ -13,6 +14,7 @@ from io import StringIO
 import os
 import platform
 from pathlib import Path
+import tempfile
 
 
 MEDIA_SECTION = "J29_MEDIA"
@@ -68,7 +70,16 @@ def _launch_key_fields(game):
 
     game_id = _clean(game.get("id"))
     title = _clean(game.get("title") or game.get("name") or game_id)
-    platform_name = _clean(game.get("platform") or game.get("folder") or "MEDIA").upper()
+    launch_type = _clean(game.get("launch_type")).upper()
+    game_id_upper = game_id.upper()
+    folder_name = _clean(game.get("folder")).upper()
+
+    if launch_type == "STEAM" or game_id_upper.startswith("STEAM_") or folder_name == "STEAM":
+        platform_name = "STEAM"
+    else:
+        platform_name = _clean(
+            game.get("platform") or game.get("folder") or "MEDIA"
+        ).upper()
 
     return {
         "type": "GAME",
@@ -549,6 +560,240 @@ def write_collection_to_target(games, title, target_path):
 
     return {
         "success": True,
+        "target_path": str(root),
+        "descriptor_path": str(descriptor_path),
+        "title": collection_title,
+        "item_count": len(expected_ids),
+        "game_ids": expected_ids,
+        "verified": True,
+    }
+
+
+def inspect_existing_media(target_path):
+    """Return a safe user-facing summary of an existing J-29 descriptor."""
+    target = _resolve_safe_target(target_path)
+    root = Path(target["path"])
+    descriptor_path = root / MEDIA_METADATA_FILENAME
+
+    if not descriptor_path.is_file():
+        return {
+            "exists": False,
+            "valid": False,
+            "target_path": str(root),
+            "descriptor_path": str(descriptor_path),
+            "mode": "NONE",
+            "title": "",
+            "reason": "NO J-29 METADATA FOUND",
+        }
+
+    from engine.media import read_media_metadata
+
+    metadata = read_media_metadata(root)
+    if not metadata or not metadata.get("valid"):
+        return {
+            "exists": True,
+            "valid": False,
+            "target_path": str(root),
+            "descriptor_path": str(descriptor_path),
+            "mode": "INVALID",
+            "title": "UNREADABLE J-29 METADATA",
+            "reason": (metadata or {}).get("reason", "INVALID MEDIA METADATA"),
+        }
+
+    mode = metadata.get("mode", "UNKNOWN")
+    summary = {
+        "exists": True,
+        "valid": True,
+        "target_path": str(root),
+        "descriptor_path": str(descriptor_path),
+        "mode": mode,
+        "title": metadata.get("title", ""),
+        "platform": "",
+        "item_count": 0,
+        "reason": "",
+    }
+
+    if mode in ("LAUNCH_KEY", "SELF_CONTAINED"):
+        game = metadata.get("game") or {}
+        summary["title"] = game.get("title") or game.get("name") or "J-29 GAME MEDIA"
+        summary["platform"] = game.get("platform") or game.get("folder") or ""
+    elif mode == "COLLECTION":
+        summary["title"] = metadata.get("title") or "SOFTWARE COLLECTION"
+        summary["item_count"] = len(metadata.get("items") or [])
+
+    return summary
+
+
+def _verify_launch_key_write(root, fields):
+    from engine.media import read_media_metadata
+
+    metadata = read_media_metadata(root)
+    return bool(
+        metadata
+        and metadata.get("valid")
+        and metadata.get("mode") == "LAUNCH_KEY"
+        and (metadata.get("game") or {}).get("target_game_id") == fields["game_id"]
+    )
+
+
+def _verify_collection_write(root, collection_title, expected_ids):
+    from engine.media import read_media_metadata
+
+    metadata = read_media_metadata(root)
+    actual_ids = []
+    if metadata and metadata.get("valid") and metadata.get("mode") == "COLLECTION":
+        actual_ids = [
+            (item or {}).get("target_game_id", "")
+            for item in metadata.get("items", [])
+        ]
+
+    return bool(
+        metadata
+        and metadata.get("valid")
+        and metadata.get("mode") == "COLLECTION"
+        and metadata.get("title") == collection_title
+        and actual_ids == expected_ids
+    )
+
+
+def _restore_descriptor(root, descriptor_path, original_bytes):
+    """Atomically restore the exact original descriptor bytes."""
+    restore_name = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            dir=str(root),
+            prefix=".j29-media-restore-",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            restore_name = handle.name
+            handle.write(original_bytes)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(restore_name, descriptor_path)
+        restore_name = None
+    finally:
+        if restore_name:
+            try:
+                Path(restore_name).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def _replace_descriptor_atomically(descriptor_text, target_path, verify_callback):
+    """Replace only j29-media.ini and restore the original on verify failure."""
+    target = _resolve_safe_target(target_path)
+    root = Path(target["path"])
+    descriptor_path = root / MEDIA_METADATA_FILENAME
+
+    if not descriptor_path.is_file():
+        raise MediaCreatorError("TARGET DOES NOT CONTAIN J-29 MEDIA METADATA")
+
+    try:
+        original_bytes = descriptor_path.read_bytes()
+    except OSError as exc:
+        raise MediaCreatorError(f"EXISTING METADATA COULD NOT BE READ: {exc}") from exc
+
+    temp_name = None
+    replaced = False
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            dir=str(root),
+            prefix=".j29-media-write-",
+            suffix=".tmp",
+            delete=False,
+            encoding="utf-8",
+            newline="\n",
+        ) as handle:
+            temp_name = handle.name
+            handle.write(descriptor_text)
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        # Same-volume os.replace gives us an atomic descriptor swap. No other
+        # file on the removable medium is touched.
+        os.replace(temp_name, descriptor_path)
+        temp_name = None
+        replaced = True
+
+        if not verify_callback(root):
+            try:
+                _restore_descriptor(root, descriptor_path, original_bytes)
+            except OSError as restore_exc:
+                raise MediaCreatorError(
+                    "WRITE VERIFICATION FAILED AND ORIGINAL METADATA RESTORE FAILED: "
+                    f"{restore_exc}"
+                ) from restore_exc
+            raise MediaCreatorError("WRITE VERIFICATION FAILED; ORIGINAL METADATA RESTORED")
+
+    except MediaCreatorError:
+        raise
+    except OSError as exc:
+        if replaced:
+            try:
+                _restore_descriptor(root, descriptor_path, original_bytes)
+            except OSError as restore_exc:
+                raise MediaCreatorError(
+                    f"MEDIA REPLACE FAILED: {exc}; ORIGINAL RESTORE FAILED: {restore_exc}"
+                ) from restore_exc
+        raise MediaCreatorError(f"MEDIA REPLACE FAILED: {exc}") from exc
+    finally:
+        if temp_name:
+            try:
+                Path(temp_name).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    return root, descriptor_path
+
+
+def replace_launch_key_on_target(game, target_path):
+    """Explicitly replace an existing J-29 descriptor with a launch key."""
+    fields = _launch_key_fields(game)
+    descriptor_text = build_launch_key_descriptor(game)
+    valid, status = validate_launch_key_descriptor(descriptor_text)
+    if not valid:
+        raise MediaCreatorError(status)
+
+    root, descriptor_path = _replace_descriptor_atomically(
+        descriptor_text,
+        target_path,
+        lambda volume: _verify_launch_key_write(volume, fields),
+    )
+
+    return {
+        "success": True,
+        "replaced": True,
+        "target_path": str(root),
+        "descriptor_path": str(descriptor_path),
+        "title": fields["title"],
+        "platform": fields["platform"],
+        "game_id": fields["game_id"],
+        "verified": True,
+    }
+
+
+def replace_collection_on_target(games, title, target_path):
+    """Explicitly replace an existing J-29 descriptor with a collection."""
+    ordered = _collection_games(games)
+    collection_title = _clean(title) or "J-29 COLLECTION"
+    descriptor_text = build_collection_descriptor(ordered, collection_title)
+    valid, status = validate_collection_descriptor(descriptor_text)
+    if not valid:
+        raise MediaCreatorError(status)
+
+    expected_ids = [_launch_key_fields(game)["game_id"] for game in ordered]
+    root, descriptor_path = _replace_descriptor_atomically(
+        descriptor_text,
+        target_path,
+        lambda volume: _verify_collection_write(volume, collection_title, expected_ids),
+    )
+
+    return {
+        "success": True,
+        "replaced": True,
         "target_path": str(root),
         "descriptor_path": str(descriptor_path),
         "title": collection_title,

@@ -422,11 +422,17 @@ def update_footer():
     elif current_screen == "media_tools":
         set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
 
+    elif current_screen == "media_creator_groups":
+        set_footer("↑↓ MOVE   ENTER OPEN   ESC BACK")
+
     elif current_screen == "media_creator_games":
-        set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
+        set_footer("↑↓ MOVE   ENTER SELECT   ESC LIBRARIES")
 
     elif current_screen == "media_creator_collection_games":
-        set_footer("↑↓ MOVE   SPACE TOGGLE   ENTER NEXT   ESC BACK")
+        if len(creator_collection_selection) < 2:
+            set_footer("↑↓ MOVE   SPACE TOGGLE   SELECT 2+ TO CONTINUE   ESC LIBRARIES")
+        else:
+            set_footer("↑↓ MOVE   SPACE TOGGLE   ENTER NEXT   ESC LIBRARIES")
 
     elif current_screen == "media_creator_collection_title":
         set_footer("TYPE NAME   ENTER NEXT   ESC BACK")
@@ -442,9 +448,12 @@ def update_footer():
 
     elif current_screen == "media_creator_confirm":
         if creator_selected_target and creator_selected_target.get("existing_descriptor"):
-            set_footer("ESC CANCEL")
+            set_footer("R REPLACE   ESC CANCEL")
         else:
             set_footer("W WRITE   ESC CANCEL")
+
+    elif current_screen == "media_creator_replace_confirm":
+        set_footer("W REPLACE   ESC CANCEL")
 
     elif current_screen == "media_creator_result":
         set_footer("ENTER DONE   ESC BACK")
@@ -492,6 +501,9 @@ def clear_current_screen():
     elif current_screen == "media_tools":
         draw_media_tools()
 
+    elif current_screen == "media_creator_groups":
+        draw_media_creator_groups()
+
     elif current_screen == "media_creator_games":
         draw_media_creator_games()
 
@@ -515,6 +527,9 @@ def clear_current_screen():
 
     elif current_screen == "media_creator_confirm":
         draw_media_creator_confirm()
+
+    elif current_screen == "media_creator_replace_confirm":
+        draw_media_creator_replace_confirm()
 
     elif current_screen == "media_creator_result":
         draw_media_creator_result()
@@ -554,53 +569,156 @@ def draw_media_tools():
     update_footer()
 
 
-def show_media_creator_games(reset_selection=True):
-    global current_screen, selected_creator_game, creator_selected_game
-    global creator_games, creator_mode
+def _creator_game_title(game):
+    return str(
+        game.get("title")
+        or game.get("name")
+        or "PROGRAM"
+    ).strip()
 
-    creator_mode = "SINGLE"
 
-    if reset_selection or not creator_games:
-        creator_games = engine.get_media_creator_games()
+def _creator_game_group(game):
+    # Steam-discovered titles may report PLATFORM=PC. Keep them separate from
+    # native/local PC software so users can tell the launch source at a glance.
+    launch_type = str(game.get("launch_type") or "").strip().upper()
+    game_id = str(game.get("id") or "").strip().upper()
+    folder = str(game.get("folder") or "").strip().upper()
+
+    if launch_type == "STEAM" or game_id.startswith("STEAM_") or folder == "STEAM":
+        return "STEAM"
+
+    return str(
+        game.get("platform")
+        or game.get("folder")
+        or "OTHER"
+    ).strip().upper() or "OTHER"
+
+
+def _refresh_creator_library():
+    global creator_all_games, creator_library_groups
+
+    creator_all_games = sorted(
+        engine.get_media_creator_games(),
+        key=lambda game: _creator_game_title(game).casefold(),
+    )
+
+    creator_library_groups = sorted({
+        _creator_game_group(game)
+        for game in creator_all_games
+    }, key=str.casefold)
+
+
+def _creator_entries_for_group(group_name):
+    if group_name == "ALL PROGRAMS":
+        return list(creator_all_games)
+
+    return [
+        game for game in creator_all_games
+        if _creator_game_group(game) == group_name
+    ]
+
+
+def show_media_creator_groups(mode="SINGLE", reset_selection=True, refresh=False):
+    global current_screen, creator_mode, selected_creator_group
+    global creator_browse_group, creator_selected_game, creator_preview
+    global creator_collection_selection, creator_collection_title
+
+    creator_mode = mode
+    creator_selected_game = None
+    creator_preview = None
+    creator_browse_group = None
+
+    if refresh or not creator_all_games:
+        _refresh_creator_library()
+
+    if mode == "COLLECTION" and reset_selection:
+        creator_collection_selection = []
+        creator_collection_title = ""
 
     if reset_selection:
-        selected_creator_game = 0
-    elif creator_games:
-        selected_creator_game = max(
-            0,
-            min(selected_creator_game, len(creator_games) - 1),
-        )
+        selected_creator_group = 0
 
-    creator_selected_game = None
-    current_screen = "media_creator_games"
+    current_screen = "media_creator_groups"
     scanline_canvas.itemconfig(canvas_cursor, state="normal")
     set_title(
         "========================================\n"
-        "            CREATE MEDIA\n"
-        "========================================"
+        + (
+            "       CREATE MEDIA — COLLECTION\n"
+            if mode == "COLLECTION"
+            else "            CREATE MEDIA\n"
+        )
+        + "========================================"
     )
-    draw_media_creator_games()
+    draw_media_creator_groups()
     scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_creator_groups():
+    entries = list(creator_library_groups) + ["ALL PROGRAMS"]
+
+    if not creator_all_games:
+        set_menu("SELECT LIBRARY\n\nNO ELIGIBLE LIBRARY PROGRAMS")
+        update_footer()
+        return
+
+    capacity = _list_capacity(header_lines=2)
+    start, end = _visible_list_window(entries, selected_creator_group, capacity)
+    menu_text = (
+        "SELECT LIBRARY "
+        f"{_range_status(start, end, len(entries))}\n\n"
+    )
+
+    for index in range(start, end):
+        group_name = entries[index]
+        marker = "> " if index == selected_creator_group else "  "
+        count = len(_creator_entries_for_group(group_name))
+        menu_text += f"{marker}{group_name} ({count})\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def _open_creator_group(group_name):
+    global creator_games, creator_browse_group
+    global selected_creator_game, selected_creator_collection_game
+    global current_screen
+
+    creator_browse_group = group_name
+    creator_games = _creator_entries_for_group(group_name)
+
+    if creator_mode == "COLLECTION":
+        selected_creator_collection_game = 0
+        current_screen = "media_creator_collection_games"
+        draw_media_collection_game_picker()
+    else:
+        selected_creator_game = 0
+        current_screen = "media_creator_games"
+        draw_media_creator_games()
+
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def show_media_creator_games(reset_selection=True):
+    # Backward-compatible entry point used by existing return paths.
+    show_media_creator_groups(
+        mode="SINGLE",
+        reset_selection=reset_selection,
+        refresh=reset_selection,
+    )
 
 
 def draw_media_creator_games():
     entries = creator_games
 
     if not entries:
-        set_menu(
-            "SELECT PROGRAM\n\n"
-            "NO ELIGIBLE LIBRARY PROGRAMS"
-        )
+        set_menu("SELECT PROGRAM\n\nNO PROGRAMS IN THIS LIBRARY")
         update_footer()
         return
 
-    capacity = _list_capacity(header_lines=2)
-    start, end = _visible_list_window(
-        entries,
-        selected_creator_game,
-        capacity,
-    )
+    capacity = _list_capacity(header_lines=3)
+    start, end = _visible_list_window(entries, selected_creator_game, capacity)
     menu_text = (
+        f"{creator_browse_group}/\n"
         "SELECT PROGRAM "
         f"{_range_status(start, end, len(entries))}\n\n"
     )
@@ -608,9 +726,7 @@ def draw_media_creator_games():
     for index in range(start, end):
         game = entries[index]
         marker = "> " if index == selected_creator_game else "  "
-        title = game.get("title") or game.get("name") or "PROGRAM"
-        platform_name = game.get("platform") or game.get("folder") or "UNKNOWN"
-        menu_text += f"{marker}{title} [{platform_name}]\n"
+        menu_text += f"{marker}{_creator_game_title(game)}\n"
 
     set_menu(menu_text)
     update_footer()
@@ -629,31 +745,23 @@ def _collection_has_game(game):
 
 
 def show_media_collection_game_picker(reset_selection=True):
-    global current_screen, creator_games, selected_creator_collection_game
-    global creator_collection_selection, creator_collection_title
-    global creator_mode, creator_preview
-
-    creator_mode = "COLLECTION"
-    creator_preview = None
-    creator_games = engine.get_media_creator_games()
-
-    if reset_selection:
-        selected_creator_collection_game = 0
-        creator_collection_selection = []
-        creator_collection_title = ""
-    elif creator_games:
-        selected_creator_collection_game = max(
-            0,
-            min(selected_creator_collection_game, len(creator_games) - 1),
+    # Entry from MEDIA TOOLS begins at the shared library browser. Returning
+    # from later collection screens can reopen the current library directly.
+    if reset_selection or not creator_browse_group:
+        show_media_creator_groups(
+            mode="COLLECTION",
+            reset_selection=reset_selection,
+            refresh=reset_selection,
         )
+        return
 
-    current_screen = "media_creator_collection_games"
-    scanline_canvas.itemconfig(canvas_cursor, state="normal")
-    set_title(
-        "========================================\n"
-        "       CREATE MEDIA — COLLECTION\n"
-        "========================================"
+    global current_screen, creator_games, selected_creator_collection_game
+    creator_games = _creator_entries_for_group(creator_browse_group)
+    selected_creator_collection_game = max(
+        0,
+        min(selected_creator_collection_game, max(0, len(creator_games) - 1)),
     )
+    current_screen = "media_creator_collection_games"
     draw_media_collection_game_picker()
     scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
 
@@ -664,19 +772,21 @@ def draw_media_collection_game_picker():
 
     if not entries:
         set_menu(
+            f"{creator_browse_group}/\n"
             "SELECT PROGRAMS\n\n"
-            "NO ELIGIBLE LIBRARY PROGRAMS"
+            "NO PROGRAMS IN THIS LIBRARY"
         )
         update_footer()
         return
 
-    capacity = _list_capacity(header_lines=3)
+    capacity = _list_capacity(header_lines=4)
     start, end = _visible_list_window(
         entries,
         selected_creator_collection_game,
         capacity,
     )
     menu_text = (
+        f"{creator_browse_group}/\n"
         f"SELECT PROGRAMS — {selected_count} SELECTED "
         f"{_range_status(start, end, len(entries))}\n\n"
     )
@@ -685,12 +795,7 @@ def draw_media_collection_game_picker():
         game = entries[index]
         marker = "> " if index == selected_creator_collection_game else "  "
         checked = "[X]" if _collection_has_game(game) else "[ ]"
-        title = game.get("title") or game.get("name") or "PROGRAM"
-        platform_name = game.get("platform") or game.get("folder") or "UNKNOWN"
-        menu_text += f"{marker}{checked} {title} [{platform_name}]\n"
-
-    if selected_count < 2:
-        menu_text += "\nSELECT AT LEAST TWO PROGRAMS"
+        menu_text += f"{marker}{checked} {_creator_game_title(game)}\n"
 
     set_menu(menu_text)
     update_footer()
@@ -962,8 +1067,20 @@ def draw_media_creator_targets():
 
 
 def show_media_creator_confirm(target):
-    global current_screen, creator_selected_target
+    global current_screen, creator_selected_target, creator_existing_summary
     creator_selected_target = target
+    creator_existing_summary = None
+    if target.get("existing_descriptor"):
+        try:
+            creator_existing_summary = engine.get_existing_media_summary(target["path"])
+        except Exception as exc:
+            creator_existing_summary = {
+                "exists": True,
+                "valid": False,
+                "mode": "UNKNOWN",
+                "title": "UNREADABLE J-29 METADATA",
+                "reason": str(exc),
+            }
     current_screen = "media_creator_confirm"
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
     set_title(
@@ -986,15 +1103,25 @@ def draw_media_creator_confirm():
         item_line = f"ITEMS ........... {creator_preview.get('item_count', 0)}\n"
 
     if creator_selected_target.get("existing_descriptor"):
+        existing = creator_existing_summary or {}
+        existing_type = existing.get("mode", "UNKNOWN").replace("_", " ")
+        existing_title = existing.get("title") or "UNKNOWN"
+        existing_extra = ""
+        if existing.get("item_count"):
+            existing_extra = f"CURRENT ITEMS ... {existing.get('item_count')}\n"
+        if not existing.get("valid", False):
+            existing_extra += f"CURRENT STATUS .. {existing.get('reason', 'INVALID METADATA')}\n"
         set_menu(
-            f"TYPE ............ {creator_preview['media_type']}\n"
-            f"TITLE ........... {creator_preview['title']}\n"
+            f"NEW TYPE ........ {creator_preview['media_type']}\n"
+            f"NEW TITLE ....... {creator_preview['title']}\n"
             + item_line
             + f"TARGET .......... {target_text}\n"
             "FILE ............ j29-media.ini\n\n"
             "EXISTING J-29 METADATA DETECTED\n"
-            "OVERWRITE IS DISABLED IN THIS CHECKPOINT\n\n"
-            "USE BLANK MEDIA OR REMOVE THE OLD DESCRIPTOR MANUALLY"
+            f"CURRENT TYPE .... {existing_type}\n"
+            f"CURRENT TITLE ... {existing_title}\n"
+            + existing_extra
+            + "\nPRESS R TO ENTER REPLACE MODE"
         )
     else:
         set_menu(
@@ -1009,7 +1136,43 @@ def draw_media_creator_confirm():
     update_footer()
 
 
-def perform_media_creator_write():
+
+def show_media_creator_replace_confirm():
+    global current_screen
+
+    if not creator_selected_target or not creator_selected_target.get("existing_descriptor"):
+        engine.play_sound("error")
+        return
+
+    current_screen = "media_creator_replace_confirm"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "       REPLACE J-29 METADATA\n"
+        "========================================"
+    )
+    draw_media_creator_replace_confirm()
+
+
+def draw_media_creator_replace_confirm():
+    existing = creator_existing_summary or {}
+    current_type = existing.get("mode", "UNKNOWN").replace("_", " ")
+    current_title = existing.get("title") or "UNKNOWN"
+    new_title = (creator_preview or {}).get("title", "UNKNOWN")
+    new_type = (creator_preview or {}).get("media_type", "UNKNOWN")
+
+    set_menu(
+        f"CURRENT TYPE .... {current_type}\n"
+        f"CURRENT TITLE ... {current_title}\n\n"
+        f"NEW TYPE ........ {new_type}\n"
+        f"NEW TITLE ....... {new_title}\n\n"
+        "ONLY j29-media.ini WILL BE REPLACED\n"
+        "OTHER FILES ON THIS MEDIA WILL NOT BE MODIFIED\n\n"
+        "PRESS W TO REPLACE J-29 METADATA"
+    )
+    update_footer()
+
+def perform_media_creator_write(replace_existing=False):
     global current_screen, creator_write_result
 
     if not creator_selected_target:
@@ -1023,26 +1186,44 @@ def perform_media_creator_write():
         engine.play_sound("error")
         return
 
-    if creator_selected_target.get("existing_descriptor"):
+    target_has_descriptor = bool(creator_selected_target.get("existing_descriptor"))
+    if target_has_descriptor and not replace_existing:
+        engine.play_sound("error")
+        return
+    if replace_existing and not target_has_descriptor:
         engine.play_sound("error")
         return
 
     try:
         if creator_mode == "COLLECTION":
-            creator_write_result = engine.write_media_collection(
-                creator_collection_selection,
-                creator_collection_title,
-                creator_selected_target["path"],
-            )
+            if replace_existing:
+                creator_write_result = engine.replace_media_collection(
+                    creator_collection_selection,
+                    creator_collection_title,
+                    creator_selected_target["path"],
+                )
+            else:
+                creator_write_result = engine.write_media_collection(
+                    creator_collection_selection,
+                    creator_collection_title,
+                    creator_selected_target["path"],
+                )
         else:
-            creator_write_result = engine.write_media_launch_key(
-                creator_selected_game,
-                creator_selected_target["path"],
-            )
+            if replace_existing:
+                creator_write_result = engine.replace_media_launch_key(
+                    creator_selected_game,
+                    creator_selected_target["path"],
+                )
+            else:
+                creator_write_result = engine.write_media_launch_key(
+                    creator_selected_game,
+                    creator_selected_target["path"],
+                )
         engine.play_sound("access_granted")
     except Exception as exc:
         creator_write_result = {
             "success": False,
+            "replaced": replace_existing,
             "error": str(exc),
             "target_path": creator_selected_target.get("path", "MEDIA"),
         }
@@ -1064,8 +1245,9 @@ def draw_media_creator_result():
         item_line = ""
         if result.get("item_count"):
             item_line = f"ITEMS ........... {result.get('item_count')}\n"
+        action_text = "REPLACE COMPLETE" if result.get("replaced") else "WRITE COMPLETE"
         set_menu(
-            "WRITE COMPLETE\n\n"
+            f"{action_text}\n\n"
             f"TITLE ........... {result.get('title', 'PROGRAM')}\n"
             + item_line
             + f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
@@ -1074,8 +1256,9 @@ def draw_media_creator_result():
             "REMOVE AND REINSERT MEDIA TO ACTIVATE"
         )
     else:
+        action_text = "REPLACE FAILED" if result.get("replaced") else "WRITE FAILED"
         set_menu(
-            "WRITE FAILED\n\n"
+            f"{action_text}\n\n"
             f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
             f"ERROR ........... {result.get('error', 'UNKNOWN ERROR')}\n\n"
             "NO VERIFIED MEDIA WAS CREATED"
@@ -1553,6 +1736,10 @@ canvas_command = scanline_canvas.create_text(
 current_screen = "main"
 selected_option = 0
 selected_game = 0
+# Cache Favorites/Recent entries while those screens are open so arrow-key
+# navigation never re-runs the full game-discovery pipeline.
+favorite_view_games = []
+recent_view_games = []
 current_library_folder = None
 selected_game_record = None
 selected_media_item = 0
@@ -1562,6 +1749,10 @@ creator_selected_game = None
 creator_preview = None
 creator_mode = "SINGLE"
 creator_games = []
+creator_all_games = []
+creator_library_groups = []
+creator_browse_group = None
+selected_creator_group = 0
 selected_creator_collection_game = 0
 creator_collection_selection = []
 creator_collection_title = ""
@@ -1569,6 +1760,7 @@ selected_creator_collection_order = 0
 creator_targets = []
 selected_creator_target = 0
 creator_selected_target = None
+creator_existing_summary = None
 creator_write_result = None
 detail_parent_screen = "games"
 detail_parent_folder = None
@@ -1904,7 +2096,7 @@ def return_from_game_details():
 
     if detail_parent_screen == "favorites":
         show_favorites()
-        entries = engine.get_favorite_games()
+        entries = favorite_view_games
 
         if entries:
             selected_game = min(index, len(entries) - 1)
@@ -1914,7 +2106,7 @@ def return_from_game_details():
     if detail_parent_screen == "recent":
         selected_id = selected_game_record.get("id") if selected_game_record else None
         show_recent()
-        entries = engine.get_recent_games()
+        entries = recent_view_games
 
         if entries:
             matching_index = next(
@@ -1939,10 +2131,11 @@ def return_from_game_details():
 
 
 def show_favorites():
-    global current_screen, selected_game
+    global current_screen, selected_game, favorite_view_games
 
     current_screen = "favorites"
     selected_game = 0
+    favorite_view_games = engine.get_favorite_games()
 
     scanline_canvas.itemconfig(
         canvas_cursor,
@@ -1966,7 +2159,7 @@ def show_favorites():
 
 
 def draw_favorites():
-    favorite_games = engine.get_favorite_games()
+    favorite_games = favorite_view_games
 
     if not favorite_games:
         set_menu(
@@ -2004,10 +2197,11 @@ def toggle_selected_favorite(game):
 
 
 def show_recent():
-    global current_screen, selected_game
+    global current_screen, selected_game, recent_view_games
 
     current_screen = "recent"
     selected_game = 0
+    recent_view_games = engine.get_recent_games()
 
     scanline_canvas.itemconfig(
         canvas_cursor,
@@ -2031,7 +2225,7 @@ def show_recent():
 
 
 def draw_recent():
-    recent_games = engine.get_recent_games()
+    recent_games = recent_view_games
 
     if not recent_games:
         set_menu(
@@ -2202,6 +2396,7 @@ def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
+    global selected_creator_group
     global selected_creator_collection_game, selected_creator_collection_order
     global creator_collection_title
     global detail_parent_screen, detail_parent_folder, detail_parent_index
@@ -2214,7 +2409,7 @@ def key_pressed(event):
         event.keysym in ("Up", "Down")
         and current_screen in (
             "main", "games", "favorites", "recent", "media_collection",
-            "media_tools", "media_creator_games", "media_creator_targets",
+            "media_tools", "media_creator_groups", "media_creator_games", "media_creator_targets",
             "media_creator_collection_games", "media_creator_collection_order",
         )
     ):
@@ -2261,14 +2456,30 @@ def key_pressed(event):
             engine.play_sound("select")
             action = options[selected_media_tool][1]
             if action == "create_media":
-                show_media_creator_games()
+                show_media_creator_groups(mode="SINGLE", reset_selection=True, refresh=True)
             elif action == "create_collection":
-                show_media_collection_game_picker()
+                show_media_creator_groups(mode="COLLECTION", reset_selection=True, refresh=True)
             else:
                 go_back()
         elif event.keysym == "Escape":
             go_back()
 
+        return
+
+    if current_screen == "media_creator_groups":
+        entries = list(creator_library_groups) + ["ALL PROGRAMS"]
+
+        if event.keysym == "Up" and entries:
+            selected_creator_group = (selected_creator_group - 1) % len(entries)
+            draw_media_creator_groups()
+        elif event.keysym == "Down" and entries:
+            selected_creator_group = (selected_creator_group + 1) % len(entries)
+            draw_media_creator_groups()
+        elif event.keysym == "Return" and entries:
+            engine.play_sound("select")
+            _open_creator_group(entries[selected_creator_group])
+        elif event.keysym == "Escape":
+            show_media_tools()
         return
 
     if current_screen == "media_creator_collection_games":
@@ -2293,7 +2504,7 @@ def key_pressed(event):
                 engine.play_sound("error")
                 show_temporary_status("SELECT AT LEAST TWO PROGRAMS", duration=1800)
         elif key == "escape":
-            show_media_tools()
+            show_media_creator_groups(mode="COLLECTION", reset_selection=False, refresh=False)
         return
 
     if current_screen == "media_creator_collection_title":
@@ -2358,7 +2569,7 @@ def key_pressed(event):
             engine.play_sound("select")
             show_media_creator_preview(entries[selected_creator_game])
         elif event.keysym == "Escape":
-            show_media_tools()
+            show_media_creator_groups(mode="SINGLE", reset_selection=False, refresh=False)
 
         return
 
@@ -2367,7 +2578,7 @@ def key_pressed(event):
             engine.play_sound("select")
             show_media_creator_targets()
         elif event.keysym == "Escape":
-            show_media_creator_games(reset_selection=False)
+            _open_creator_group(creator_browse_group or "ALL PROGRAMS")
         return
 
     if current_screen == "media_creator_targets":
@@ -2391,10 +2602,21 @@ def key_pressed(event):
 
     if current_screen == "media_creator_confirm":
         key = event.keysym.lower()
-        if key == "w":
+        if key == "w" and not (creator_selected_target or {}).get("existing_descriptor"):
             perform_media_creator_write()
+        elif key == "r" and (creator_selected_target or {}).get("existing_descriptor"):
+            engine.play_sound("select")
+            show_media_creator_replace_confirm()
         elif key == "escape":
             show_media_creator_targets(reset_selection=False)
+        return
+
+    if current_screen == "media_creator_replace_confirm":
+        key = event.keysym.lower()
+        if key == "w":
+            perform_media_creator_write(replace_existing=True)
+        elif key == "escape":
+            show_media_creator_confirm(creator_selected_target)
         return
 
     if current_screen == "media_creator_result":
@@ -2413,7 +2635,7 @@ def key_pressed(event):
         return
 
     if event.keysym.lower() == "f" and current_screen == "favorites":
-        favorite_games = engine.get_favorite_games()
+        favorite_games = favorite_view_games
         if favorite_games:
             game = favorite_games[selected_game]
             toggle_selected_favorite(game)
@@ -2571,7 +2793,7 @@ def key_pressed(event):
             return_from_game_details()
 
     elif current_screen == "favorites":
-        favorite_games = engine.get_favorite_games()
+        favorite_games = favorite_view_games
 
         if event.keysym == "Up":
             if not favorite_games:
@@ -2606,7 +2828,7 @@ def key_pressed(event):
             go_back()
 
     elif current_screen == "recent":
-        recent_games = engine.get_recent_games()
+        recent_games = recent_view_games
 
         if event.keysym == "Up":
             if not recent_games:

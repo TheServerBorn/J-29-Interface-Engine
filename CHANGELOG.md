@@ -1,3 +1,35 @@
+## v0.29.3 — Physical Media Creator Reuse / Replace — TEST BUILD
+**Date:** 2026-09-05
+
+### Added
+- Existing J-29 media summary before replacement, including current media type/title and collection item count when available.
+- Explicit two-step reuse workflow: `R REPLACE` enters destructive-action mode, then `W REPLACE` performs the descriptor replacement.
+- Launch-key-to-launch-key, launch-key-to-collection, collection-to-launch-key, and collection-to-collection descriptor replacement support.
+- Atomic same-volume replacement of `j29-media.ini`.
+- Automatic rollback to the exact original descriptor bytes if post-write verification fails.
+
+### Safety
+- Replacement only operates on `j29-media.ini`; unrelated files on the target are never modified.
+- Safe-target discovery and system-drive rejection remain mandatory before replacement.
+- A single Enter key or single write key cannot replace existing metadata.
+- Existing invalid/corrupt J-29 descriptors may be deliberately replaced, but still require the same two-step confirmation.
+- New metadata is verified through the existing v0.27 reader before success is reported.
+
+### Validation
+- Python compile check: PASS.
+- Existing descriptor summary: PASS.
+- Atomic launch-key replacement: PASS.
+- Atomic collection replacement: PASS.
+- Existing reader compatibility after replacement: PASS.
+- Unrelated-file preservation: PASS.
+- Original-descriptor rollback on forced verification failure: PASS.
+- Unsafe/non-discovered target rejection: PASS.
+
+### Status
+TEST BUILD — requires real removable-media validation before v0.29 final regression and release closeout.
+
+---
+
 ## v0.29.2 — Physical Media Creator Collections — TEST BUILD
 **Date:** 2026-09-05
 

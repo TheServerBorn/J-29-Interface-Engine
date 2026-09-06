@@ -18,6 +18,9 @@ from engine.media_creator import (
     list_safe_media_targets,
     write_launch_key_to_target,
     write_collection_to_target,
+    inspect_existing_media,
+    replace_launch_key_on_target,
+    replace_collection_on_target,
 )
 from engine.system_info import (
     get_cpu_name,
@@ -222,6 +225,15 @@ class J29Engine:
 
     def write_media_collection(self, games, title, target_path):
         return write_collection_to_target(games, title, target_path)
+
+    def get_existing_media_summary(self, target_path):
+        return inspect_existing_media(target_path)
+
+    def replace_media_launch_key(self, game, target_path):
+        return replace_launch_key_on_target(game, target_path)
+
+    def replace_media_collection(self, games, title, target_path):
+        return replace_collection_on_target(games, title, target_path)
 
     def get_present_media(self):
         return self._media_monitor.present()
