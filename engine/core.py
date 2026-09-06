@@ -14,8 +14,10 @@ from engine.media import MediaMonitor, inspect_media
 from engine.media_creator import (
     eligible_launch_key_games,
     preview_launch_key,
+    preview_collection,
     list_safe_media_targets,
     write_launch_key_to_target,
+    write_collection_to_target,
 )
 from engine.system_info import (
     get_cpu_name,
@@ -209,11 +211,17 @@ class J29Engine:
     def preview_media_launch_key(self, game):
         return preview_launch_key(game)
 
+    def preview_media_collection(self, games, title):
+        return preview_collection(games, title)
+
     def get_media_creator_targets(self):
         return list_safe_media_targets()
 
     def write_media_launch_key(self, game, target_path):
         return write_launch_key_to_target(game, target_path)
+
+    def write_media_collection(self, games, title, target_path):
+        return write_collection_to_target(games, title, target_path)
 
     def get_present_media(self):
         return self._media_monitor.present()

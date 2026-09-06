@@ -1,4 +1,40 @@
+## v0.29.2 — Physical Media Creator Collections — TEST BUILD
+**Date:** 2026-09-05
+
+### Added
+- `CREATE COLLECTION` workflow under Media Tools.
+- Multi-program selection using the same creator-safe Steam, ROM, and executable library records as single-game launch keys.
+- Collection title entry with `J-29 COLLECTION` as the blank/default title.
+- Explicit collection-order review and reordering before metadata generation.
+- Standard `type=COLLECTION` authoring using ordered `[ITEM_1]`, `[ITEM_2]`, ... sections.
+- Collection preview showing title, item count, ordered programs, and descriptor validation status.
+- Collection writing through the existing safe removable-target selection and `W` confirmation workflow.
+- Post-write verification through the existing v0.27 physical-media reader.
+
+### Safety
+- Collections require at least two unique eligible library programs.
+- Existing `j29-media.ini` files remain protected from overwrite.
+- The same removable-target/system-drive safety boundary used by v0.29.1 is retained.
+- A failed collection verification removes the descriptor created by that write attempt.
+- Internal `game_id` values remain hidden from the normal creator UI.
+
+### Validation
+- Python compile check: PASS.
+- Tkinter application startup under virtual display: PASS.
+- Three-item collection descriptor generation: PASS.
+- Descriptor parsed by the existing v0.27 reader as `COLLECTION`: PASS.
+- Collection item order preserved through write/read round trip: PASS.
+- Stable `game_id` targets preserved: PASS.
+- Existing-descriptor overwrite refusal: PASS.
+- Single-item collection refusal: PASS.
+
+### Status
+TEST BUILD — requires real J-29 removable-media validation before the collection slice is considered hardware-validated.
+
+---
+
 ## v0.29.1 — Physical Media Creator Target/Write — TEST BUILD
+**Date:** 2026-09-05
 
 ### Added
 - Conservative creator target discovery for writable removable media.
@@ -25,7 +61,83 @@
 - Non-discovered/unsafe target rejection: PASS.
 
 ### Status
-TEST BUILD — requires real removable-media validation before this slice is committed as stable v0.29 work.
+TEST BUILD — real removable-media validation belongs to the active v0.29 branch before release closeout.
+
+---
+
+## v0.29.0 — Physical Media Creator Foundation — TEST BUILD
+**Date:** 2026-09-05
+
+### Added
+- Permanent `MEDIA TOOLS` entry on the J-29 main menu.
+- Initial `CREATE MEDIA` flow.
+- Library-program selector using existing J-29 library records.
+- Creator eligibility rules excluding physical-media records and launch-key chains.
+- Automatic GAME launch-key descriptor generation using stable J-29 library IDs.
+- Descriptor validation and user-facing metadata preview before any write operation.
+
+### Architecture
+- Added `engine/media_creator.py` as the authoring layer.
+- Existing `engine/media.py` reader remained unchanged.
+- Creator UI hides internal library IDs from normal users.
+
+### Design Rule
+> **Users choose the software. J-29 writes the metadata.**
+
+### Status
+FOUNDATION VALIDATED AND COMMITTED ON THE v0.29 DEVELOPMENT BRANCH.
+
+---
+
+## v0.28.1 — Custom Audio / Callisto Audio Identity — COMPLETE
+**Date:** 2026-09-05
+
+### Added
+- Persistent Windows audio-output path for reliable playback of very short terminal sounds.
+- Callisto Rev C reference sound set built around dry mechanical clicks, muted CRT-era beeps, low-fi industrial texture, and minimal melody.
+- `access_denied` sound retained as part of the semantic audio API for the future secured maintenance flow.
+- Guided first-run Windows integration requirement for removable-media behavior:
+  - Disable AutoPlay for removable drives.
+  - Disable Windows Device Connect sound.
+  - Disable Windows Device Disconnect sound.
+  - Keep removable-drive mounting enabled.
+  - Explain host changes before applying them.
+  - Verify the physical-media workflow after setup.
+
+### Changed
+- Physical-media polling interval reduced from 2000 ms to 500 ms so `MEDIA DETECTED` acknowledgement feels nearly immediate.
+- Initial physical-media polling startup delay reduced to 500 ms.
+- Callisto audio identity moved away from the exploratory melodic / cartoonish direction and into a cohesive industrial terminal palette.
+- Windows playback now keeps the output path ready between cues instead of relying on fresh one-shot startup for every short WAV.
+- The current audio baseline is Rev C; earlier Rev A and Rev B sets are exploratory iterations and are not the reference sound identity.
+
+### Fixed
+- Rapidly holding Up / Down no longer produces delayed or stacked menu-movement audio after navigation stops.
+- Short WAV cues that could be inaudible on some desktop Windows audio endpoints now play reliably.
+- Cross-hardware audio behavior no longer depends on whether the host device wakes its output path quickly enough for 20–200 ms sound cues.
+- Physical-media acknowledgement no longer feels delayed by the previous two-second polling interval.
+
+### Validation
+- Audio enabled / disabled configuration: PASS.
+- Master-volume scaling: PASS.
+- Missing-sound failure handling: PASS.
+- Rapid menu-repeat stress test: PASS.
+- Physical-media detection at 500 ms polling interval: PASS.
+- Windows laptop playback: PASS.
+- Windows desktop playback: PASS.
+- Continuous preview and one-shot cue playback: PASS.
+- Rev C sound identity accepted as the current Callisto baseline.
+
+### Architecture
+- Audio remains an engine service.
+- Themes remain responsible for sound identity and event-to-file mappings.
+- Terminal UI continues to request semantic events such as `menu_move`, `media_detected`, `launch`, and `shutdown`.
+- Host-specific playback details remain behind the audio service.
+
+### Status
+**COMPLETE — CROSS-HARDWARE VALIDATED**
+
+v0.28.1 is the stable audio checkpoint. Future changes to the Callisto sound set should be treated as theme/polish work unless they expose a new reliability issue.
 
 ---
 

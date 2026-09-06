@@ -425,7 +425,16 @@ def update_footer():
     elif current_screen == "media_creator_games":
         set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
 
-    elif current_screen == "media_creator_preview":
+    elif current_screen == "media_creator_collection_games":
+        set_footer("↑↓ MOVE   SPACE TOGGLE   ENTER NEXT   ESC BACK")
+
+    elif current_screen == "media_creator_collection_title":
+        set_footer("TYPE NAME   ENTER NEXT   ESC BACK")
+
+    elif current_screen == "media_creator_collection_order":
+        set_footer("↑↓ SELECT   ←→ REORDER   ENTER PREVIEW   ESC BACK")
+
+    elif current_screen in ("media_creator_preview", "media_creator_collection_preview"):
         set_footer("ENTER TARGET   ESC BACK")
 
     elif current_screen == "media_creator_targets":
@@ -486,8 +495,20 @@ def clear_current_screen():
     elif current_screen == "media_creator_games":
         draw_media_creator_games()
 
+    elif current_screen == "media_creator_collection_games":
+        draw_media_collection_game_picker()
+
+    elif current_screen == "media_creator_collection_title":
+        draw_media_collection_title()
+
+    elif current_screen == "media_creator_collection_order":
+        draw_media_collection_order()
+
     elif current_screen == "media_creator_preview":
         draw_media_creator_preview()
+
+    elif current_screen == "media_creator_collection_preview":
+        draw_media_collection_preview()
 
     elif current_screen == "media_creator_targets":
         draw_media_creator_targets()
@@ -501,6 +522,7 @@ def clear_current_screen():
 def get_media_tool_options():
     return [
         ("CREATE MEDIA", "create_media"),
+        ("CREATE COLLECTION", "create_collection"),
         ("BACK", "back"),
     ]
 
@@ -534,7 +556,9 @@ def draw_media_tools():
 
 def show_media_creator_games(reset_selection=True):
     global current_screen, selected_creator_game, creator_selected_game
-    global creator_games
+    global creator_games, creator_mode
+
+    creator_mode = "SINGLE"
 
     if reset_selection or not creator_games:
         creator_games = engine.get_media_creator_games()
@@ -592,9 +616,252 @@ def draw_media_creator_games():
     update_footer()
 
 
-def show_media_creator_preview(game):
-    global current_screen, creator_selected_game, creator_preview
+def _creator_game_id(game):
+    return str((game or {}).get("id") or "").strip()
 
+
+def _collection_has_game(game):
+    game_id = _creator_game_id(game).casefold()
+    return any(
+        _creator_game_id(item).casefold() == game_id
+        for item in creator_collection_selection
+    )
+
+
+def show_media_collection_game_picker(reset_selection=True):
+    global current_screen, creator_games, selected_creator_collection_game
+    global creator_collection_selection, creator_collection_title
+    global creator_mode, creator_preview
+
+    creator_mode = "COLLECTION"
+    creator_preview = None
+    creator_games = engine.get_media_creator_games()
+
+    if reset_selection:
+        selected_creator_collection_game = 0
+        creator_collection_selection = []
+        creator_collection_title = ""
+    elif creator_games:
+        selected_creator_collection_game = max(
+            0,
+            min(selected_creator_collection_game, len(creator_games) - 1),
+        )
+
+    current_screen = "media_creator_collection_games"
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "       CREATE MEDIA — COLLECTION\n"
+        "========================================"
+    )
+    draw_media_collection_game_picker()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_collection_game_picker():
+    entries = creator_games
+    selected_count = len(creator_collection_selection)
+
+    if not entries:
+        set_menu(
+            "SELECT PROGRAMS\n\n"
+            "NO ELIGIBLE LIBRARY PROGRAMS"
+        )
+        update_footer()
+        return
+
+    capacity = _list_capacity(header_lines=3)
+    start, end = _visible_list_window(
+        entries,
+        selected_creator_collection_game,
+        capacity,
+    )
+    menu_text = (
+        f"SELECT PROGRAMS — {selected_count} SELECTED "
+        f"{_range_status(start, end, len(entries))}\n\n"
+    )
+
+    for index in range(start, end):
+        game = entries[index]
+        marker = "> " if index == selected_creator_collection_game else "  "
+        checked = "[X]" if _collection_has_game(game) else "[ ]"
+        title = game.get("title") or game.get("name") or "PROGRAM"
+        platform_name = game.get("platform") or game.get("folder") or "UNKNOWN"
+        menu_text += f"{marker}{checked} {title} [{platform_name}]\n"
+
+    if selected_count < 2:
+        menu_text += "\nSELECT AT LEAST TWO PROGRAMS"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def toggle_media_collection_game(game):
+    global creator_collection_selection
+
+    game_id = _creator_game_id(game).casefold()
+    for index, item in enumerate(creator_collection_selection):
+        if _creator_game_id(item).casefold() == game_id:
+            creator_collection_selection.pop(index)
+            return
+
+    creator_collection_selection.append(game)
+
+
+def show_media_collection_title(reset=False):
+    global current_screen, creator_collection_title
+
+    if reset:
+        creator_collection_title = ""
+
+    current_screen = "media_creator_collection_title"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "       CREATE MEDIA — COLLECTION\n"
+        "========================================"
+    )
+    draw_media_collection_title()
+
+
+def draw_media_collection_title():
+    shown_title = creator_collection_title or "_"
+    set_menu(
+        f"PROGRAMS ........ {len(creator_collection_selection)}\n\n"
+        "COLLECTION TITLE\n\n"
+        f"> {shown_title}\n\n"
+        "LEAVE BLANK FOR: J-29 COLLECTION"
+    )
+    update_footer()
+
+
+def show_media_collection_order(reset_selection=True):
+    global current_screen, selected_creator_collection_order
+
+    if len(creator_collection_selection) < 2:
+        engine.play_sound("error")
+        show_media_collection_game_picker(reset_selection=False)
+        show_temporary_status("SELECT AT LEAST TWO PROGRAMS", duration=1800)
+        return
+
+    if reset_selection:
+        selected_creator_collection_order = 0
+    else:
+        selected_creator_collection_order = max(
+            0,
+            min(selected_creator_collection_order, len(creator_collection_selection) - 1),
+        )
+
+    current_screen = "media_creator_collection_order"
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "       CREATE MEDIA — COLLECTION\n"
+        "========================================"
+    )
+    draw_media_collection_order()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_collection_order():
+    entries = creator_collection_selection
+    capacity = _list_capacity(header_lines=3)
+    start, end = _visible_list_window(
+        entries,
+        selected_creator_collection_order,
+        capacity,
+    )
+    menu_text = (
+        f"ORDER PROGRAMS {_range_status(start, end, len(entries))}\n"
+        f"TITLE: {creator_collection_title or 'J-29 COLLECTION'}\n\n"
+    )
+
+    for index in range(start, end):
+        game = entries[index]
+        marker = "> " if index == selected_creator_collection_order else "  "
+        title = game.get("title") or game.get("name") or "PROGRAM"
+        platform_name = game.get("platform") or game.get("folder") or "UNKNOWN"
+        menu_text += f"{marker}{index + 1}. {title} [{platform_name}]\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def reorder_media_collection(direction):
+    global selected_creator_collection_order
+
+    index = selected_creator_collection_order
+    new_index = index + direction
+    if new_index < 0 or new_index >= len(creator_collection_selection):
+        return
+
+    creator_collection_selection[index], creator_collection_selection[new_index] = (
+        creator_collection_selection[new_index],
+        creator_collection_selection[index],
+    )
+    selected_creator_collection_order = new_index
+    engine.play_sound("menu_move")
+    draw_media_collection_order()
+
+
+def show_media_collection_preview():
+    global current_screen, creator_preview, creator_mode
+
+    creator_mode = "COLLECTION"
+    creator_preview = engine.preview_media_collection(
+        creator_collection_selection,
+        creator_collection_title,
+    )
+    current_screen = "media_creator_collection_preview"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "      CREATE COLLECTION — PREVIEW\n"
+        "========================================"
+    )
+    draw_media_collection_preview()
+
+
+def draw_media_collection_preview():
+    if not creator_preview:
+        set_menu("NO COLLECTION PREVIEW AVAILABLE")
+        update_footer()
+        return
+
+    items = creator_preview.get("items", [])
+    preview_lines = []
+    for index, item in enumerate(items[:6], start=1):
+        preview_lines.append(
+            f"{index}. {item.get('title', 'PROGRAM')} [{item.get('platform', 'UNKNOWN')}]"
+        )
+    if len(items) > 6:
+        preview_lines.append(f"... {len(items) - 6} MORE")
+
+    set_menu(
+        f"MEDIA TYPE ...... {creator_preview['media_type']}\n"
+        f"TITLE ........... {creator_preview['title']}\n"
+        f"ITEMS ........... {creator_preview['item_count']}\n"
+        f"DESCRIPTOR ...... {creator_preview['status']}\n\n"
+        + "\n".join(preview_lines)
+        + "\n\nNO MEDIA HAS BEEN WRITTEN\n"
+        "PRESS ENTER TO SELECT TARGET MEDIA"
+    )
+    update_footer()
+
+
+def show_current_creator_preview():
+    if creator_mode == "COLLECTION":
+        show_media_collection_preview()
+    elif creator_selected_game:
+        show_media_creator_preview(creator_selected_game)
+    else:
+        show_media_tools()
+
+
+def show_media_creator_preview(game):
+    global current_screen, creator_selected_game, creator_preview, creator_mode
+
+    creator_mode = "SINGLE"
     creator_selected_game = game
     creator_preview = engine.preview_media_launch_key(game)
     current_screen = "media_creator_preview"
@@ -714,10 +981,16 @@ def draw_media_creator_confirm():
         return
 
     target_text = _creator_target_label(creator_selected_target)
+    item_line = ""
+    if creator_mode == "COLLECTION":
+        item_line = f"ITEMS ........... {creator_preview.get('item_count', 0)}\n"
+
     if creator_selected_target.get("existing_descriptor"):
         set_menu(
-            f"PROGRAM ......... {creator_preview['title']}\n"
-            f"TARGET .......... {target_text}\n"
+            f"TYPE ............ {creator_preview['media_type']}\n"
+            f"TITLE ........... {creator_preview['title']}\n"
+            + item_line
+            + f"TARGET .......... {target_text}\n"
             "FILE ............ j29-media.ini\n\n"
             "EXISTING J-29 METADATA DETECTED\n"
             "OVERWRITE IS DISABLED IN THIS CHECKPOINT\n\n"
@@ -725,8 +998,10 @@ def draw_media_creator_confirm():
         )
     else:
         set_menu(
-            f"PROGRAM ......... {creator_preview['title']}\n"
-            f"TARGET .......... {target_text}\n"
+            f"TYPE ............ {creator_preview['media_type']}\n"
+            f"TITLE ........... {creator_preview['title']}\n"
+            + item_line
+            + f"TARGET .......... {target_text}\n"
             "FILE ............ j29-media.ini\n\n"
             "WARNING: THIS WILL WRITE TO REMOVABLE MEDIA\n"
             "PRESS W TO WRITE"
@@ -737,7 +1012,14 @@ def draw_media_creator_confirm():
 def perform_media_creator_write():
     global current_screen, creator_write_result
 
-    if not creator_selected_game or not creator_selected_target:
+    if not creator_selected_target:
+        engine.play_sound("error")
+        return
+
+    if creator_mode == "SINGLE" and not creator_selected_game:
+        engine.play_sound("error")
+        return
+    if creator_mode == "COLLECTION" and len(creator_collection_selection) < 2:
         engine.play_sound("error")
         return
 
@@ -746,10 +1028,17 @@ def perform_media_creator_write():
         return
 
     try:
-        creator_write_result = engine.write_media_launch_key(
-            creator_selected_game,
-            creator_selected_target["path"],
-        )
+        if creator_mode == "COLLECTION":
+            creator_write_result = engine.write_media_collection(
+                creator_collection_selection,
+                creator_collection_title,
+                creator_selected_target["path"],
+            )
+        else:
+            creator_write_result = engine.write_media_launch_key(
+                creator_selected_game,
+                creator_selected_target["path"],
+            )
         engine.play_sound("access_granted")
     except Exception as exc:
         creator_write_result = {
@@ -772,10 +1061,14 @@ def perform_media_creator_write():
 def draw_media_creator_result():
     result = creator_write_result or {}
     if result.get("success"):
+        item_line = ""
+        if result.get("item_count"):
+            item_line = f"ITEMS ........... {result.get('item_count')}\n"
         set_menu(
             "WRITE COMPLETE\n\n"
             f"TITLE ........... {result.get('title', 'PROGRAM')}\n"
-            f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
+            + item_line
+            + f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
             "FILE ............ j29-media.ini\n"
             "VERIFICATION .... PASS\n\n"
             "REMOVE AND REINSERT MEDIA TO ACTIVATE"
@@ -1267,7 +1560,12 @@ selected_media_tool = 0
 selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
+creator_mode = "SINGLE"
 creator_games = []
+selected_creator_collection_game = 0
+creator_collection_selection = []
+creator_collection_title = ""
+selected_creator_collection_order = 0
 creator_targets = []
 selected_creator_target = 0
 creator_selected_target = None
@@ -1904,6 +2202,8 @@ def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
+    global selected_creator_collection_game, selected_creator_collection_order
+    global creator_collection_title
     global detail_parent_screen, detail_parent_folder, detail_parent_index
 
     if command_mode:
@@ -1915,6 +2215,7 @@ def key_pressed(event):
         and current_screen in (
             "main", "games", "favorites", "recent", "media_collection",
             "media_tools", "media_creator_games", "media_creator_targets",
+            "media_creator_collection_games", "media_creator_collection_order",
         )
     ):
         engine.play_sound("menu_move")
@@ -1961,11 +2262,87 @@ def key_pressed(event):
             action = options[selected_media_tool][1]
             if action == "create_media":
                 show_media_creator_games()
+            elif action == "create_collection":
+                show_media_collection_game_picker()
             else:
                 go_back()
         elif event.keysym == "Escape":
             go_back()
 
+        return
+
+    if current_screen == "media_creator_collection_games":
+        entries = creator_games
+        key = event.keysym.lower()
+
+        if key == "up" and entries:
+            selected_creator_collection_game = (selected_creator_collection_game - 1) % len(entries)
+            draw_media_collection_game_picker()
+        elif key == "down" and entries:
+            selected_creator_collection_game = (selected_creator_collection_game + 1) % len(entries)
+            draw_media_collection_game_picker()
+        elif key == "space" and entries:
+            engine.play_sound("select")
+            toggle_media_collection_game(entries[selected_creator_collection_game])
+            draw_media_collection_game_picker()
+        elif key == "return":
+            if len(creator_collection_selection) >= 2:
+                engine.play_sound("select")
+                show_media_collection_title(reset=False)
+            else:
+                engine.play_sound("error")
+                show_temporary_status("SELECT AT LEAST TWO PROGRAMS", duration=1800)
+        elif key == "escape":
+            show_media_tools()
+        return
+
+    if current_screen == "media_creator_collection_title":
+        key = event.keysym.lower()
+
+        if key == "escape":
+            show_media_collection_game_picker(reset_selection=False)
+        elif key == "return":
+            engine.play_sound("select")
+            show_media_collection_order()
+        elif key == "backspace":
+            creator_collection_title = creator_collection_title[:-1]
+            draw_media_collection_title()
+        elif event.char and event.char.isprintable() and len(creator_collection_title) < 48:
+            creator_collection_title += event.char.upper()
+            draw_media_collection_title()
+        return
+
+    if current_screen == "media_creator_collection_order":
+        entries = creator_collection_selection
+        key = event.keysym.lower()
+
+        if key == "up" and entries:
+            selected_creator_collection_order = (selected_creator_collection_order - 1) % len(entries)
+            draw_media_collection_order()
+        elif key == "down" and entries:
+            selected_creator_collection_order = (selected_creator_collection_order + 1) % len(entries)
+            draw_media_collection_order()
+        elif key == "left":
+            reorder_media_collection(-1)
+        elif key == "right":
+            reorder_media_collection(1)
+        elif key == "return":
+            engine.play_sound("select")
+            try:
+                show_media_collection_preview()
+            except Exception as exc:
+                engine.play_sound("error")
+                show_temporary_status(str(exc), duration=2500)
+        elif key == "escape":
+            show_media_collection_title(reset=False)
+        return
+
+    if current_screen == "media_creator_collection_preview":
+        if event.keysym == "Return":
+            engine.play_sound("select")
+            show_media_creator_targets()
+        elif event.keysym == "Escape":
+            show_media_collection_order(reset_selection=False)
         return
 
     if current_screen == "media_creator_games":
@@ -2009,7 +2386,7 @@ def key_pressed(event):
         elif key == "r":
             show_media_creator_targets(reset_selection=False)
         elif key == "escape":
-            show_media_creator_preview(creator_selected_game)
+            show_current_creator_preview()
         return
 
     if current_screen == "media_creator_confirm":

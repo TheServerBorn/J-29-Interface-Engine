@@ -133,6 +133,123 @@ def preview_launch_key(game):
     }
 
 
+
+
+def _collection_games(games):
+    """Return a validated, de-duplicated ordered collection selection."""
+    ordered = []
+    seen = set()
+
+    for game in games or []:
+        if not is_launch_key_eligible(game):
+            raise MediaCreatorError("COLLECTION CONTAINS AN INELIGIBLE PROGRAM")
+
+        game_id = _clean(game.get("id"))
+        key = game_id.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(game)
+
+    if len(ordered) < 2:
+        raise MediaCreatorError("COLLECTION REQUIRES AT LEAST TWO PROGRAMS")
+
+    return ordered
+
+
+def build_collection_descriptor(games, title):
+    """Build an ordered metadata-only COLLECTION descriptor."""
+    ordered = _collection_games(games)
+    collection_title = _clean(title) or "J-29 COLLECTION"
+
+    parser = ConfigParser()
+    parser.optionxform = str.lower
+    parser[MEDIA_SECTION] = {
+        "type": "COLLECTION",
+        "title": collection_title,
+    }
+
+    for index, game in enumerate(ordered, start=1):
+        fields = _launch_key_fields(game)
+        parser[f"ITEM_{index}"] = {
+            "title": fields["title"],
+            "platform": fields["platform"],
+            "game_id": fields["game_id"],
+        }
+
+    buffer = StringIO()
+    parser.write(buffer, space_around_delimiters=False)
+    return buffer.getvalue().strip() + "\n"
+
+
+def validate_collection_descriptor(text):
+    """Validate creator-generated collection metadata before writing it."""
+    parser = ConfigParser()
+    try:
+        parser.read_string(str(text or ""))
+    except Exception as exc:
+        return False, f"INVALID MEDIA METADATA: {exc}"
+
+    if not parser.has_section(MEDIA_SECTION):
+        return False, "J29_MEDIA SECTION NOT FOUND"
+
+    section = parser[MEDIA_SECTION]
+    if section.get("type", "").strip().upper() != "COLLECTION":
+        return False, "MEDIA TYPE MUST BE COLLECTION"
+    if not section.get("title", "").strip():
+        return False, "COLLECTION TITLE NOT PROVIDED"
+
+    item_sections = [
+        name for name in parser.sections()
+        if name.strip().upper().startswith(("ITEM_", "COLLECTION_ITEM_"))
+    ]
+    if len(item_sections) < 2:
+        return False, "COLLECTION REQUIRES AT LEAST TWO ITEMS"
+
+    seen = set()
+    for index, name in enumerate(item_sections, start=1):
+        item = parser[name]
+        game_id = item.get("game_id", "").strip()
+        if not game_id:
+            return False, f"COLLECTION ITEM {index} HAS NO GAME ID"
+        key = game_id.casefold()
+        if key in seen:
+            return False, f"COLLECTION ITEM {index} DUPLICATES A GAME ID"
+        seen.add(key)
+
+    return True, "READY"
+
+
+def preview_collection(games, title):
+    """Return user-facing collection preview data plus descriptor text."""
+    ordered = _collection_games(games)
+    collection_title = _clean(title) or "J-29 COLLECTION"
+    descriptor = build_collection_descriptor(ordered, collection_title)
+    valid, status = validate_collection_descriptor(descriptor)
+
+    if not valid:
+        raise MediaCreatorError(status)
+
+    items = []
+    for game in ordered:
+        fields = _launch_key_fields(game)
+        items.append({
+            "title": fields["title"],
+            "platform": fields["platform"],
+            "game_id": fields["game_id"],
+        })
+
+    return {
+        "media_type": "SOFTWARE COLLECTION",
+        "title": collection_title,
+        "item_count": len(items),
+        "items": items,
+        "target": "LIBRARY PROGRAMS",
+        "status": status,
+        "descriptor": descriptor,
+    }
+
+
 def _path_key(path):
     value = str(path or "").rstrip("\\/")
     if platform.system() == "Windows":
@@ -365,3 +482,78 @@ def write_launch_key_to_target(game, target_path):
         "game_id": fields["game_id"],
         "verified": True,
     }
+
+def write_collection_to_target(games, title, target_path):
+    """Create and verify a metadata-only J-29 collection on removable media.
+
+    Overwrite remains deliberately disabled. Verification is performed through
+    the existing v0.27 media reader and confirms collection item order as well
+    as stable library IDs.
+    """
+    ordered = _collection_games(games)
+    collection_title = _clean(title) or "J-29 COLLECTION"
+    descriptor_text = build_collection_descriptor(ordered, collection_title)
+    valid, status = validate_collection_descriptor(descriptor_text)
+    if not valid:
+        raise MediaCreatorError(status)
+
+    expected_ids = [_launch_key_fields(game)["game_id"] for game in ordered]
+    target = _resolve_safe_target(target_path)
+    root = Path(target["path"])
+    descriptor_path = root / MEDIA_METADATA_FILENAME
+
+    if descriptor_path.exists():
+        raise MediaCreatorError("TARGET ALREADY CONTAINS J-29 MEDIA METADATA")
+
+    created = False
+    try:
+        with descriptor_path.open("x", encoding="utf-8", newline="\n") as handle:
+            created = True
+            handle.write(descriptor_text)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except FileExistsError as exc:
+        raise MediaCreatorError("TARGET ALREADY CONTAINS J-29 MEDIA METADATA") from exc
+    except OSError as exc:
+        if created:
+            try:
+                descriptor_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise MediaCreatorError(f"MEDIA WRITE FAILED: {exc}") from exc
+
+    from engine.media import read_media_metadata
+
+    metadata = read_media_metadata(root)
+    actual_ids = []
+    if metadata and metadata.get("valid") and metadata.get("mode") == "COLLECTION":
+        actual_ids = [
+            (item or {}).get("target_game_id", "")
+            for item in metadata.get("items", [])
+        ]
+
+    verified = bool(
+        metadata
+        and metadata.get("valid")
+        and metadata.get("mode") == "COLLECTION"
+        and metadata.get("title") == collection_title
+        and actual_ids == expected_ids
+    )
+
+    if not verified:
+        try:
+            descriptor_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise MediaCreatorError("WRITE VERIFICATION FAILED; DESCRIPTOR REMOVED")
+
+    return {
+        "success": True,
+        "target_path": str(root),
+        "descriptor_path": str(descriptor_path),
+        "title": collection_title,
+        "item_count": len(expected_ids),
+        "game_ids": expected_ids,
+        "verified": True,
+    }
+
