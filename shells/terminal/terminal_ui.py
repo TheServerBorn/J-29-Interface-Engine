@@ -20,10 +20,12 @@ root.attributes("-fullscreen", settings["fullscreen"])
 
 def maintenance_mode(event=None):
     engine.play_sound("access_granted")
+    engine.set_aux_display("MAINTENANCE", "J-29", "MAINTENANCE")
     root.attributes("-fullscreen", False)
     root.config(cursor="")
 
 def shutdown_terminal(event=None):
+    engine.set_aux_display("SHUTDOWN", "J-29", "SHUTDOWN")
     # Give the short async shutdown tone a moment to start before Tk exits.
     # This is intentionally tiny and does not affect normal navigation or
     # external game-launch timing.
@@ -31,6 +33,7 @@ def shutdown_terminal(event=None):
     root.after(220, root.destroy)
 
 def terminal_mode(event=None):
+    engine.set_aux_display("READY", "J-29", "READY")
     root.attributes("-fullscreen", True)
     root.config(cursor="none")
 
@@ -1385,6 +1388,23 @@ def draw_media_prompt():
     volume_name = pending_media.get("volume_name", "REMOVABLE MEDIA")
 
     if metadata.get("valid") and metadata.get("type") == "COLLECTION":
+        aux_title = (
+            pending_media.get("collection_title")
+            or metadata.get("title")
+            or "COLLECTION"
+        )
+    elif game:
+        aux_title = game.get("name") or game.get("title") or "PROGRAM"
+    else:
+        aux_title = volume_name
+
+    engine.set_aux_display(
+        "MEDIA_DETECTED",
+        "MEDIA DETECTED",
+        str(aux_title)[:32],
+    )
+
+    if metadata.get("valid") and metadata.get("type") == "COLLECTION":
         title = (
             pending_media.get("collection_title")
             or metadata.get("title")
@@ -1824,6 +1844,7 @@ def show_main_menu():
     global current_screen, selected_option
 
     current_screen = "main"
+    engine.set_aux_display("READY", "J-29", "READY")
     selected_option = 0
 
     scanline_canvas.itemconfig(
@@ -2885,6 +2906,7 @@ def blink_cursor():
 
 def run():
     root.bind("<Key>", key_pressed)
+    engine.set_aux_display("BOOTING", "J-29", "BOOTING")
 
     if settings["boot_sequence"]:
         start_boot_sequence()

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from engine.library import build_library
 from engine.audio import AudioManager
+from engine.aux_display import AuxiliaryDisplayManager
 from engine.theme import load_theme
 from engine.games import load_games
 from engine.steam import discover_steam_games
@@ -40,6 +41,7 @@ class J29Engine:
             f"themes/{settings['theme']}/theme.ini"
         )
         self._audio = AudioManager(settings=settings, theme=theme)
+        self._aux_display = AuxiliaryDisplayManager(settings=settings)
 
     def get_last_launch_error(self):
         return self._last_launch_error
@@ -56,6 +58,22 @@ class J29Engine:
             f"themes/{settings['theme']}/theme.ini"
         )
         self._audio.configure(settings=settings, theme=theme)
+
+
+    def set_aux_display(self, state, line1="", line2=""):
+        return self._aux_display.show(state, line1, line2)
+
+    def clear_aux_display(self):
+        return self._aux_display.clear()
+
+    def get_aux_display_state(self):
+        return self._aux_display.get_last_message()
+
+    def reload_aux_display(self):
+        self._aux_display.configure(load_settings())
+
+    def close_aux_display(self):
+        self._aux_display.close()
 
 
     def get_games(self):

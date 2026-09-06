@@ -99,6 +99,21 @@ def load_settings(config_path="config/settings.ini"):
             "master_volume",
             fallback=70
         ),
+        "aux_display_enabled": config.getboolean(
+            "AUXILIARY_DISPLAY",
+            "enabled",
+            fallback=False
+        ),
+        "aux_display_adapter": config.get(
+            "AUXILIARY_DISPLAY",
+            "adapter",
+            fallback="debug"
+        ),
+        "aux_display_debug_file": config.get(
+            "AUXILIARY_DISPLAY",
+            "debug_file",
+            fallback="config/aux_display_debug.json"
+        ),
         "fullscreen_key": config.get(
             "DEVELOPMENT",
             "fullscreen_key",

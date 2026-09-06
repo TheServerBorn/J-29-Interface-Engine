@@ -1,3 +1,18 @@
+## v0.30.0 — Auxiliary Display Foundation — TEST BUILD
+
+### Added
+- Hardware-agnostic auxiliary-display engine service.
+- Adapter interface with Null and debug-file implementations.
+- Configurable `[AUXILIARY_DISPLAY]` settings.
+- Initial semantic states for boot, ready, media detection, maintenance, and shutdown.
+
+### Architecture
+- Shells report semantic machine state.
+- Display hardware remains isolated behind adapters.
+- Auxiliary-display failures are nonfatal.
+
+---
+
 ## v0.29.3 — Physical Media Creator Reuse / Replace — TEST BUILD
 **Date:** 2026-09-05
 
