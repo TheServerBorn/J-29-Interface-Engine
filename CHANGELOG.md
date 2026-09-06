@@ -1,3 +1,55 @@
+## v0.28.1 — Custom Audio / Callisto Audio Identity — COMPLETE
+**Date:** 2026-09-05
+
+### Added
+- Persistent Windows audio-output path for reliable playback of very short terminal sounds.
+- Callisto Rev C reference sound set built around dry mechanical clicks, muted CRT-era beeps, low-fi industrial texture, and minimal melody.
+- `access_denied` sound retained as part of the semantic audio API for the future secured maintenance flow.
+- Guided first-run Windows integration requirement for removable-media behavior:
+  - Disable AutoPlay for removable drives.
+  - Disable Windows Device Connect sound.
+  - Disable Windows Device Disconnect sound.
+  - Keep removable-drive mounting enabled.
+  - Explain host changes before applying them.
+  - Verify the physical-media workflow after setup.
+
+### Changed
+- Physical-media polling interval reduced from 2000 ms to 500 ms so `MEDIA DETECTED` acknowledgement feels nearly immediate.
+- Initial physical-media polling startup delay reduced to 500 ms.
+- Callisto audio identity moved away from the exploratory melodic / cartoonish direction and into a cohesive industrial terminal palette.
+- Windows playback now keeps the output path ready between cues instead of relying on fresh one-shot startup for every short WAV.
+- The current audio baseline is Rev C; earlier Rev A and Rev B sets are exploratory iterations and are not the reference sound identity.
+
+### Fixed
+- Rapidly holding Up / Down no longer produces delayed or stacked menu-movement audio after navigation stops.
+- Short WAV cues that could be inaudible on some desktop Windows audio endpoints now play reliably.
+- Cross-hardware audio behavior no longer depends on whether the host device wakes its output path quickly enough for 20–200 ms sound cues.
+- Physical-media acknowledgement no longer feels delayed by the previous two-second polling interval.
+
+### Validation
+- Audio enabled / disabled configuration: PASS.
+- Master-volume scaling: PASS.
+- Missing-sound failure handling: PASS.
+- Rapid menu-repeat stress test: PASS.
+- Physical-media detection at 500 ms polling interval: PASS.
+- Windows laptop playback: PASS.
+- Windows desktop playback: PASS.
+- Continuous preview and one-shot cue playback: PASS.
+- Rev C sound identity accepted as the current Callisto baseline.
+
+### Architecture
+- Audio remains an engine service.
+- Themes remain responsible for sound identity and event-to-file mappings.
+- Terminal UI continues to request semantic events such as `menu_move`, `media_detected`, `launch`, and `shutdown`.
+- Host-specific playback details remain behind the audio service.
+
+### Status
+**COMPLETE — CROSS-HARDWARE VALIDATED**
+
+v0.28.1 is the stable audio checkpoint. Future changes to the Callisto sound set should be treated as theme/polish work unless they expose a new reliability issue.
+
+---
+
 ## v0.28.0 — Custom Audio Foundation — TEST BUILD
 
 ### Added

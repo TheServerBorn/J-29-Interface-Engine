@@ -23,6 +23,80 @@ Development follows one rule:
 
 # Current Stable Build
 
+## v0.28.1 — Custom Audio / Callisto Audio Identity
+
+### Status
+
+**COMPLETE — CROSS-HARDWARE VALIDATED**
+
+### Goal
+
+Give J-29 configurable, theme-owned audio feedback that feels like part of the machine rather than a layer added on top of it.
+
+### Completed
+
+- Engine-level `AudioManager` service
+- Theme-owned semantic sound mappings
+- Runtime audio enable/disable control
+- Master-volume support
+- Failure-safe handling for missing or unavailable sound files
+- Boot / reboot sound
+- Menu movement sound
+- Selection / confirmation sound
+- Error sound
+- Physical-media detection sound
+- Access-granted sound
+- Access-denied API / sound
+- Universal game-launch transition sound
+- Shutdown sound
+- Rapid menu-repeat throttling so navigation audio cannot build a delayed backlog
+- Physical-media polling tightened from 2000 ms to 500 ms for faster media acknowledgement
+- Persistent Windows audio-output path so very short terminal sounds are not swallowed by hardware / endpoint startup latency
+- Callisto Rev C industrial terminal sound identity adopted as the current reference set
+
+### Audio Identity
+
+The current Callisto reference sound set uses:
+
+- Dry mechanical key / relay clicks
+- Muted CRT-era electronic beeps
+- Low-fi industrial texture
+- Minimal melody
+- Short, restrained acknowledgements
+- One cohesive retro-futuristic terminal palette
+
+### Cross-Hardware Validation
+
+- Windows laptop: PASS
+- Windows desktop: PASS
+- Short one-shot WAV playback through persistent Windows audio path: PASS
+- Rapid menu-repeat stress test: PASS
+- Audio enable/disable: PASS
+- Master-volume control: PASS
+- Missing-sound failure handling: PASS
+- Physical-media detection cue at 500 ms polling interval: PASS
+
+### Windows Integration Requirement
+
+The guided first-run setup must explain and help the user configure the host so Windows does not interrupt the J-29 physical-media experience:
+
+- Disable AutoPlay for removable drives
+- Disable Windows Device Connect sound
+- Disable Windows Device Disconnect sound
+- Keep removable-drive mounting enabled
+- Explain changes before applying them
+- Provide a physical-media verification step after configuration
+
+### Architecture Principle
+
+> **The engine requests semantic audio events; themes define how those events sound.**
+
+The Terminal Shell should not depend on specific filenames or a specific host playback backend.
+
+---
+
+# Previous Completed Milestone
+
 ## v0.27 — Media Metadata & Collections
 
 ### Status
@@ -68,29 +142,56 @@ This allows a floppy disk, SD card, USB device, or other supported medium to beh
 
 ---
 
+---
+
 # v0.28 — Custom Audio
 
-### Goal
+### Status
 
-Add configurable retro audio feedback.
+**COMPLETE — v0.28.1 CROSS-HARDWARE VALIDATED**
 
-Possible sounds:
-
-- Boot
-- Menu movement
-- Selection
-- Error
-- Media detected
-- Access granted
-- Access denied
-- Game launch
-- Shutdown
-
-Sounds will be replaceable through themes.
+Custom Audio is now part of the stable J-29 foundation. Further sound changes should be treated as normal polish or theme work rather than expansion of the milestone.
 
 ---
 
-# v0.29 — OLED / Auxiliary Display Support
+# v0.29 — Physical Media Creator
+
+### Goal
+
+Turn J-29 physical-media authoring into a normal user workflow so users do not need to manually edit `j29-media.ini` files or look up internal game IDs.
+
+Planned workflow:
+
+    MEDIA TOOLS
+    CREATE MEDIA
+    SELECT GAME(S)
+    SELECT TARGET MEDIA
+    WRITE MEDIA
+
+Planned capabilities:
+
+- Detect writable removable media selected by the user
+- Browse and select games from the installed J-29 library
+- Create metadata-only launch keys automatically
+- Create multi-game collection media automatically
+- Write the correct stable `game_id`, title, platform, and media type without exposing internal IDs to normal users
+- Support naming collections and choosing collection order
+- Validate the target before writing
+- Avoid accidental writes to non-removable or system storage
+- Preserve manual `j29-media.ini` authoring for advanced users
+- Reopen newly created media through the existing Physical Media workflow for immediate validation
+
+Self-contained media copying may be included only if it can be implemented safely without expanding scope; launch-key and collection authoring are the required v1.0 functionality.
+
+### Design Principle
+
+> **Users choose the software. J-29 writes the metadata.**
+
+The INI format remains open and editable, but it becomes an implementation detail rather than a setup requirement for ordinary users.
+
+---
+
+# v0.30 — OLED / Auxiliary Display Support
 
 ### Goal
 
@@ -115,7 +216,7 @@ Exact hardware support will be determined during development.
 
 ---
 
-# v0.30 — Maintenance Terminal
+# v0.31 — Maintenance Terminal
 
 ### Goal
 
@@ -158,7 +259,7 @@ The maintenance password will not be stored as plain text.
 
 ---
 
-# v0.31 — Appliance Mode
+# v0.32 — Appliance Mode
 
 ### Goal
 
@@ -177,7 +278,7 @@ Planned work:
 
 ---
 
-# v0.32 — Boot Maintenance Console
+# v0.33 — Boot Maintenance Console
 
 ### Goal
 
@@ -199,7 +300,7 @@ Possible console:
 
 ---
 
-# v0.33 — Deployment Build
+# v0.34 — Deployment Build
 
 ### Goal
 
@@ -226,7 +327,7 @@ Target PC:
 
 ---
 
-# v0.34–v0.99 — Stabilization
+# v0.35–v0.99 — Stabilization
 
 After the major systems are complete, development will focus on reliability rather than adding major new features.
 
@@ -246,6 +347,8 @@ Testing will include:
 - Returning from games
 - Clean shutdown
 - Fresh installation
+- Audio playback across different Windows audio endpoints
+- First-run Windows integration verification
 
 No major feature additions should occur during final stabilization unless required for v1.0 functionality.
 
@@ -268,12 +371,14 @@ The reference experience will include:
 - Steam launching
 - Emulator support
 - Physical media support
+- Built-in physical media creator for launch keys and collections
 - Favorites
 - Recent games
 - Game metadata
 - Custom sounds
 - Maintenance environment
 - First-run configuration
+- Guided Windows integration for removable-media AutoPlay and device sounds
 - Appliance-mode operation
 - Packaged deployment
 
