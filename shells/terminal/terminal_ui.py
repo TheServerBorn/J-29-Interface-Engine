@@ -426,7 +426,19 @@ def update_footer():
         set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
 
     elif current_screen == "media_creator_preview":
-        set_footer("ESC BACK")
+        set_footer("ENTER TARGET   ESC BACK")
+
+    elif current_screen == "media_creator_targets":
+        set_footer("↑↓ MOVE   ENTER SELECT   R REFRESH   ESC BACK")
+
+    elif current_screen == "media_creator_confirm":
+        if creator_selected_target and creator_selected_target.get("existing_descriptor"):
+            set_footer("ESC CANCEL")
+        else:
+            set_footer("W WRITE   ESC CANCEL")
+
+    elif current_screen == "media_creator_result":
+        set_footer("ENTER DONE   ESC BACK")
 
     else:
         set_footer("")
@@ -476,6 +488,15 @@ def clear_current_screen():
 
     elif current_screen == "media_creator_preview":
         draw_media_creator_preview()
+
+    elif current_screen == "media_creator_targets":
+        draw_media_creator_targets()
+
+    elif current_screen == "media_creator_confirm":
+        draw_media_creator_confirm()
+
+    elif current_screen == "media_creator_result":
+        draw_media_creator_result()
 
 def get_media_tool_options():
     return [
@@ -599,8 +620,173 @@ def draw_media_creator_preview():
         f"TARGET .......... {creator_preview['target']}\n"
         f"DESCRIPTOR ...... {creator_preview['status']}\n\n"
         "NO MEDIA HAS BEEN WRITTEN\n"
-        "TARGET SELECTION IS NOT ENABLED IN THIS CHECKPOINT"
+        "PRESS ENTER TO SELECT TARGET MEDIA"
     )
+    update_footer()
+
+
+def _creator_target_label(target):
+    path = target.get("path", "MEDIA")
+    label = target.get("label", "")
+    text = path
+    if label:
+        text += f" [{label}]"
+    if target.get("existing_descriptor"):
+        text += " [J29 DATA EXISTS]"
+    return text
+
+
+def show_media_creator_targets(reset_selection=True):
+    global current_screen, creator_targets, selected_creator_target
+    global creator_selected_target, creator_write_result
+
+    creator_targets = engine.get_media_creator_targets()
+    if reset_selection:
+        selected_creator_target = 0
+    elif creator_targets:
+        selected_creator_target = max(
+            0,
+            min(selected_creator_target, len(creator_targets) - 1),
+        )
+
+    creator_selected_target = None
+    creator_write_result = None
+    current_screen = "media_creator_targets"
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "       CREATE MEDIA — TARGET\n"
+        "========================================"
+    )
+    draw_media_creator_targets()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_media_creator_targets():
+    entries = creator_targets
+    if not entries:
+        set_menu(
+            "SELECT TARGET MEDIA\n\n"
+            "NO SAFE WRITABLE REMOVABLE MEDIA FOUND\n\n"
+            "INSERT USB / SD / FLOPPY MEDIA\n"
+            "THEN PRESS R TO REFRESH"
+        )
+        update_footer()
+        return
+
+    capacity = _list_capacity(header_lines=2)
+    start, end = _visible_list_window(
+        entries,
+        selected_creator_target,
+        capacity,
+    )
+    menu_text = (
+        "SELECT TARGET MEDIA "
+        f"{_range_status(start, end, len(entries))}\n\n"
+    )
+
+    for index in range(start, end):
+        target = entries[index]
+        marker = "> " if index == selected_creator_target else "  "
+        menu_text += marker + _creator_target_label(target) + "\n"
+
+    set_menu(menu_text)
+    update_footer()
+
+
+def show_media_creator_confirm(target):
+    global current_screen, creator_selected_target
+    creator_selected_target = target
+    current_screen = "media_creator_confirm"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "        CREATE MEDIA — WRITE\n"
+        "========================================"
+    )
+    draw_media_creator_confirm()
+
+
+def draw_media_creator_confirm():
+    if not creator_selected_target or not creator_preview:
+        set_menu("MEDIA CREATOR STATE NOT AVAILABLE")
+        update_footer()
+        return
+
+    target_text = _creator_target_label(creator_selected_target)
+    if creator_selected_target.get("existing_descriptor"):
+        set_menu(
+            f"PROGRAM ......... {creator_preview['title']}\n"
+            f"TARGET .......... {target_text}\n"
+            "FILE ............ j29-media.ini\n\n"
+            "EXISTING J-29 METADATA DETECTED\n"
+            "OVERWRITE IS DISABLED IN THIS CHECKPOINT\n\n"
+            "USE BLANK MEDIA OR REMOVE THE OLD DESCRIPTOR MANUALLY"
+        )
+    else:
+        set_menu(
+            f"PROGRAM ......... {creator_preview['title']}\n"
+            f"TARGET .......... {target_text}\n"
+            "FILE ............ j29-media.ini\n\n"
+            "WARNING: THIS WILL WRITE TO REMOVABLE MEDIA\n"
+            "PRESS W TO WRITE"
+        )
+    update_footer()
+
+
+def perform_media_creator_write():
+    global current_screen, creator_write_result
+
+    if not creator_selected_game or not creator_selected_target:
+        engine.play_sound("error")
+        return
+
+    if creator_selected_target.get("existing_descriptor"):
+        engine.play_sound("error")
+        return
+
+    try:
+        creator_write_result = engine.write_media_launch_key(
+            creator_selected_game,
+            creator_selected_target["path"],
+        )
+        engine.play_sound("access_granted")
+    except Exception as exc:
+        creator_write_result = {
+            "success": False,
+            "error": str(exc),
+            "target_path": creator_selected_target.get("path", "MEDIA"),
+        }
+        engine.play_sound("error")
+
+    current_screen = "media_creator_result"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "       CREATE MEDIA — RESULT\n"
+        "========================================"
+    )
+    draw_media_creator_result()
+
+
+def draw_media_creator_result():
+    result = creator_write_result or {}
+    if result.get("success"):
+        set_menu(
+            "WRITE COMPLETE\n\n"
+            f"TITLE ........... {result.get('title', 'PROGRAM')}\n"
+            f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
+            "FILE ............ j29-media.ini\n"
+            "VERIFICATION .... PASS\n\n"
+            "REMOVE AND REINSERT MEDIA TO ACTIVATE"
+        )
+    else:
+        set_menu(
+            "WRITE FAILED\n\n"
+            f"TARGET .......... {result.get('target_path', 'MEDIA')}\n"
+            f"ERROR ........... {result.get('error', 'UNKNOWN ERROR')}\n\n"
+            "NO VERIFIED MEDIA WAS CREATED"
+        )
     update_footer()
 
 
@@ -1082,6 +1268,10 @@ selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
 creator_games = []
+creator_targets = []
+selected_creator_target = 0
+creator_selected_target = None
+creator_write_result = None
 detail_parent_screen = "games"
 detail_parent_folder = None
 detail_parent_index = 0
@@ -1713,7 +1903,7 @@ def show_command_help():
 def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
-    global selected_media_tool, selected_creator_game
+    global selected_media_tool, selected_creator_game, selected_creator_target
     global detail_parent_screen, detail_parent_folder, detail_parent_index
 
     if command_mode:
@@ -1724,7 +1914,7 @@ def key_pressed(event):
         event.keysym in ("Up", "Down")
         and current_screen in (
             "main", "games", "favorites", "recent", "media_collection",
-            "media_tools", "media_creator_games",
+            "media_tools", "media_creator_games", "media_creator_targets",
         )
     ):
         engine.play_sound("menu_move")
@@ -1796,8 +1986,45 @@ def key_pressed(event):
         return
 
     if current_screen == "media_creator_preview":
-        if event.keysym == "Escape":
+        if event.keysym == "Return":
+            engine.play_sound("select")
+            show_media_creator_targets()
+        elif event.keysym == "Escape":
             show_media_creator_games(reset_selection=False)
+        return
+
+    if current_screen == "media_creator_targets":
+        entries = creator_targets
+        key = event.keysym.lower()
+
+        if key == "up" and entries:
+            selected_creator_target = (selected_creator_target - 1) % len(entries)
+            draw_media_creator_targets()
+        elif key == "down" and entries:
+            selected_creator_target = (selected_creator_target + 1) % len(entries)
+            draw_media_creator_targets()
+        elif key == "return" and entries:
+            engine.play_sound("select")
+            show_media_creator_confirm(entries[selected_creator_target])
+        elif key == "r":
+            show_media_creator_targets(reset_selection=False)
+        elif key == "escape":
+            show_media_creator_preview(creator_selected_game)
+        return
+
+    if current_screen == "media_creator_confirm":
+        key = event.keysym.lower()
+        if key == "w":
+            perform_media_creator_write()
+        elif key == "escape":
+            show_media_creator_targets(reset_selection=False)
+        return
+
+    if current_screen == "media_creator_result":
+        if event.keysym == "Return":
+            show_media_tools()
+        elif event.keysym == "Escape":
+            show_media_creator_targets(reset_selection=False)
         return
 
     # F is a screen action in v0.22. Other alphabetic keys still open
