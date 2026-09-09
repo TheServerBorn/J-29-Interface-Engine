@@ -1,8 +1,8 @@
-# J29 Terminal Engine — Project History
+# Veyllisto Interface Engine — Project History
 
 ## Origin
 
-J29 began as a personal retro-computing project built around the Callisto J-29 computer enclosure.
+Veyllisto began as a personal retro-computing project built around the Veyllisto reference computer computer enclosure.
 
 The original goal was simple:
 
@@ -11,8 +11,8 @@ Use modern PC hardware inside a retro-styled enclosure and create a fullscreen t
 The reference system became:
 
 - Manufacturer: Callisto Computer Systems
-- System: J-29 Terminal OS
-- Model: J-29 Personal Terminal
+- System: Veyllisto Terminal
+- Model: Veyllisto Reference Terminal
 
 ---
 
@@ -41,7 +41,7 @@ By v0.13, the project had become a stable proof of concept capable of launching 
 
 # Why the Project Changed
 
-Originally, J29 was designed specifically for one machine.
+Originally, Veyllisto was designed specifically for one machine.
 
 As development continued, several ideas emerged:
 
@@ -56,7 +56,7 @@ As development continued, several ideas emerged:
 - Hidden filesystem content
 - Community-created interfaces
 
-At that point, keeping everything inside one large `j29.py` file would eventually make the project difficult to maintain.
+At that point, keeping everything inside one large `veyllisto.py` file would eventually make the project difficult to maintain.
 
 So the project changed direction early rather than waiting until the architecture became difficult to untangle.
 
@@ -64,7 +64,7 @@ So the project changed direction early rather than waiting until the architectur
 
 # The Architecture Pivot
 
-Beginning with v0.14, J29 started transitioning from a purpose-built application into a reusable retro-computing frontend engine.
+Beginning with v0.14, Veyllisto started transitioning from a purpose-built application into a reusable retro-computing frontend engine.
 
 The new architecture separates four concepts:
 
@@ -73,7 +73,9 @@ The new architecture separates four concepts:
 > Theme = how the shell looks and sounds  
 > Identity = whose fictional machine it is
 
-The original J-29 Terminal remains the reference Shell and the primary target for v1.0.
+The original Veyllisto Terminal remains the reference Shell.
+
+The v1.0 scope later expanded to four first-party Shells: Veyllisto Terminal, Classic Desktop, Living Room, and Arcade. This made the multi-shell architecture a release requirement rather than only a future capability.
 
 The architecture change does not abandon the original project.
 
@@ -85,7 +87,7 @@ It exists to make the original project easier to build while also allowing other
 
 A major part of the project vision is restoring physical interaction to digital game libraries.
 
-Instead of requiring games to physically reside on removable media, J29 can eventually treat disks and storage devices as physical representations or keys for installed software.
+Instead of requiring games to physically reside on removable media, Veyllisto can eventually treat disks and storage devices as physical representations or keys for installed software.
 
 Examples may include:
 
@@ -101,7 +103,7 @@ The software identifies what the media represents rather than depending on one s
 
 # Open Source Direction
 
-The decision was made to develop J29 publicly on GitHub.
+The decision was made to develop Veyllisto publicly on GitHub.
 
 The project is intended to allow others to:
 
@@ -120,7 +122,7 @@ Contributions are encouraged but are not intended to be mandatory.
 
 # Development Philosophy
 
-J29 uses small development milestones instead of large unstable rewrites.
+Veyllisto uses small development milestones instead of large unstable rewrites.
 
 The guiding principle is:
 
@@ -136,10 +138,10 @@ The v0.13 prototype serves as the stable reference before the v0.14 architecture
 
 The immediate objective is no longer to expand the feature list.
 
-The v1.0 scope has been frozen.
+The v1.0 scope has been frozen around the approved four-shell release.
 
-Development is now focused on completing the roadmap one milestone at a time, beginning with the modular Engine/Shell architecture.
+Development is focused on completing the roadmap one milestone at a time while preserving the modular Engine/Shell architecture and shared state across every first-party Shell.
 
-The next chapter starts with:
+The current release path builds toward the complete Veyllisto v1.0 shell suite and packaged public release.
 
-**v0.14 — Core Engine Separation**
+> **One Engine. Shared state. Multiple experiences.**
