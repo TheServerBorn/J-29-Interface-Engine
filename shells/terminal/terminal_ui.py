@@ -20,10 +20,9 @@ root.geometry("800x500")
 root.attributes("-fullscreen", settings["fullscreen"])
 
 def maintenance_mode(event=None):
-    engine.play_sound("access_granted")
-    engine.set_aux_display("MAINTENANCE", "J-29", "MAINTENANCE")
-    root.attributes("-fullscreen", False)
-    root.config(cursor="")
+    # v0.31: F12 now enters the secured in-universe maintenance workflow.
+    # It no longer exposes the host desktop/windowed development environment.
+    show_maintenance_auth()
 
 def shutdown_terminal(event=None):
     engine.set_aux_display("SHUTDOWN", "J-29", "SHUTDOWN")
@@ -424,6 +423,15 @@ def update_footer():
     elif current_screen == "aux_display":
         set_footer("↑↓ MOVE   ENTER SELECT   R REFRESH   ESC BACK")
 
+    elif current_screen == "maintenance_auth":
+        set_footer("TYPE PASSWORD   ENTER SUBMIT   ESC CANCEL")
+
+    elif current_screen == "maintenance_menu":
+        set_footer("↑↓ MOVE   ENTER SELECT")
+
+    elif current_screen == "maintenance_status":
+        set_footer("ESC BACK")
+
     elif current_screen == "media_prompt":
         set_footer("Y/ENTER OPEN   N/ESC IGNORE")
 
@@ -503,6 +511,15 @@ def clear_current_screen():
     elif current_screen == "aux_display":
         draw_aux_display_diagnostics()
 
+    elif current_screen == "maintenance_auth":
+        draw_maintenance_auth()
+
+    elif current_screen == "maintenance_menu":
+        draw_maintenance_menu()
+
+    elif current_screen == "maintenance_status":
+        draw_maintenance_status()
+
     elif current_screen == "help":
         show_command_help()
 
@@ -547,6 +564,177 @@ def clear_current_screen():
 
     elif current_screen == "media_creator_result":
         draw_media_creator_result()
+
+
+
+def get_maintenance_options():
+    return [
+        ("SYSTEM STATUS", "status"),
+        ("RETURN TO TERMINAL", "return"),
+    ]
+
+
+def show_maintenance_auth():
+    global current_screen, maintenance_password_buffer, maintenance_message
+
+    maintenance_password_buffer = ""
+    maintenance_message = ""
+    current_screen = "maintenance_auth"
+
+    engine.set_aux_display(
+        "MAINTENANCE",
+        "MAINTENANCE",
+        "AUTH REQUIRED",
+    )
+
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    scanline_canvas.itemconfig(canvas_command, text="")
+    set_title(
+        "========================================\n"
+        "        CALLISTO COMPUTER SYSTEMS\n"
+        "========================================"
+    )
+    draw_maintenance_auth()
+
+
+def draw_maintenance_auth():
+    configured = engine.maintenance_auth_configured()
+
+    if configured:
+        prompt = (
+            "MAINTENANCE TERMINAL\n\n"
+            "AUTHORIZED PERSONNEL ONLY\n\n"
+            "PASSWORD REQUIRED\n\n"
+            f"> {'*' * len(maintenance_password_buffer)}"
+        )
+    else:
+        prompt = (
+            "MAINTENANCE TERMINAL\n\n"
+            "CREDENTIAL NOT CONFIGURED\n\n"
+            "RUN FROM THE J-29 PROJECT ROOT:\n"
+            "python tools/set_maintenance_password.py"
+        )
+
+    if maintenance_message:
+        prompt += "\n\n" + maintenance_message
+
+    set_menu(prompt)
+    update_footer()
+
+
+def submit_maintenance_password():
+    global maintenance_password_buffer, maintenance_message
+
+    if not engine.maintenance_auth_configured():
+        engine.play_sound("error")
+        maintenance_message = "ACCESS UNAVAILABLE"
+        draw_maintenance_auth()
+        return
+
+    if engine.verify_maintenance_password(maintenance_password_buffer):
+        maintenance_password_buffer = ""
+        maintenance_message = ""
+        engine.play_sound("access_granted")
+        set_menu(
+            "ACCESS GRANTED\n\n"
+            "OPENING MAINTENANCE ENVIRONMENT..."
+        )
+        set_footer("")
+        root.after(650, show_maintenance_menu)
+        return
+
+    maintenance_password_buffer = ""
+    maintenance_message = "ACCESS DENIED"
+    engine.play_sound("access_denied")
+    draw_maintenance_auth()
+
+
+def cancel_maintenance_auth():
+    global maintenance_password_buffer, maintenance_message
+
+    maintenance_password_buffer = ""
+    maintenance_message = ""
+    engine.set_aux_display("READY", "J-29", "READY")
+    show_main_menu()
+
+
+def show_maintenance_menu(reset_selection=True):
+    global current_screen, selected_maintenance_option
+
+    current_screen = "maintenance_menu"
+    if reset_selection:
+        selected_maintenance_option = 0
+
+    engine.set_aux_display(
+        "MAINTENANCE",
+        "J-29",
+        "MAINTENANCE",
+    )
+
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "        CALLISTO COMPUTER SYSTEMS\n"
+        "         MAINTENANCE TERMINAL\n"
+        "========================================"
+    )
+    draw_maintenance_menu()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_maintenance_menu():
+    lines = [
+        "ACCESS LEVEL ..... AUTHORIZED",
+        "SESSION .......... LOCAL",
+        "",
+    ]
+
+    for index, (label, _action) in enumerate(get_maintenance_options()):
+        marker = "> " if index == selected_maintenance_option else "  "
+        lines.append(marker + label)
+
+    set_menu("\n".join(lines))
+    update_footer()
+
+
+def show_maintenance_status():
+    global current_screen
+
+    current_screen = "maintenance_status"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+
+    try:
+        aux = engine.get_aux_display_status()
+        aux_status = (
+            "AVAILABLE"
+            if aux.get("available")
+            else "UNAVAILABLE"
+        )
+    except Exception:
+        aux_status = "UNKNOWN"
+
+    set_title(
+        "========================================\n"
+        "          MAINTENANCE STATUS\n"
+        "========================================"
+    )
+    set_menu(
+        "AUTHENTICATION ... VERIFIED\n"
+        f"AUX DISPLAY ...... {aux_status}\n"
+        "TERMINAL ......... ONLINE\n\n"
+        "NO SYSTEM-CHANGING TOOLS ARE ENABLED\n"
+        "IN THIS v0.31.0 CHECKPOINT."
+    )
+    update_footer()
+
+
+def return_from_maintenance():
+    global maintenance_password_buffer, maintenance_message
+
+    maintenance_password_buffer = ""
+    maintenance_message = ""
+    engine.set_aux_display("READY", "J-29", "READY")
+    show_main_menu()
 
 
 def get_aux_display_options():
@@ -2001,6 +2189,9 @@ selected_game_record = None
 selected_media_item = 0
 selected_media_tool = 0
 selected_aux_option = 0
+selected_maintenance_option = 0
+maintenance_password_buffer = ""
+maintenance_message = ""
 selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
@@ -2670,6 +2861,8 @@ def key_pressed(event):
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
     global selected_aux_option
+    global selected_maintenance_option
+    global maintenance_password_buffer, maintenance_message
     global selected_creator_group
     global selected_creator_collection_game, selected_creator_collection_order
     global creator_collection_title
@@ -2679,10 +2872,64 @@ def key_pressed(event):
         handle_command_input(event)
         return
 
+    if current_screen == "maintenance_auth":
+        key = event.keysym.lower()
+
+        if key == "escape":
+            cancel_maintenance_auth()
+        elif key == "return":
+            submit_maintenance_password()
+        elif key == "backspace":
+            maintenance_password_buffer = maintenance_password_buffer[:-1]
+            maintenance_message = ""
+            draw_maintenance_auth()
+        elif (
+            event.char
+            and event.char.isprintable()
+            and len(maintenance_password_buffer) < 64
+            and engine.maintenance_auth_configured()
+        ):
+            maintenance_password_buffer += event.char
+            maintenance_message = ""
+            draw_maintenance_auth()
+
+        return
+
+    if current_screen == "maintenance_menu":
+        options = get_maintenance_options()
+
+        if event.keysym == "Up":
+            selected_maintenance_option = (
+                selected_maintenance_option - 1
+            ) % len(options)
+            draw_maintenance_menu()
+        elif event.keysym == "Down":
+            selected_maintenance_option = (
+                selected_maintenance_option + 1
+            ) % len(options)
+            draw_maintenance_menu()
+        elif event.keysym == "Return":
+            engine.play_sound("select")
+            action = options[selected_maintenance_option][1]
+
+            if action == "status":
+                show_maintenance_status()
+            elif action == "return":
+                return_from_maintenance()
+
+        # Escape intentionally does not bypass the maintenance menu. Use the
+        # explicit RETURN TO TERMINAL action after authentication.
+        return
+
+    if current_screen == "maintenance_status":
+        if event.keysym == "Escape":
+            show_maintenance_menu(reset_selection=False)
+        return
+
     if (
         event.keysym in ("Up", "Down")
         and current_screen in (
-            "main", "games", "favorites", "recent", "media_collection", "aux_display",
+            "main", "games", "favorites", "recent", "media_collection", "aux_display", "maintenance_menu",
             "media_tools", "media_creator_groups", "media_creator_games", "media_creator_targets",
             "media_creator_collection_games", "media_creator_collection_order",
         )

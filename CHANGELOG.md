@@ -1,3 +1,17 @@
+## v0.31.0 — Maintenance Entry & Authentication Foundation — TEST BUILD
+
+### Added
+- Secured in-universe Maintenance Terminal entry.
+- PBKDF2-HMAC-SHA256 credential storage with random salt.
+- Masked password input and constant-time verification.
+- Password setup utility.
+- Safe authenticated maintenance menu and status screen.
+
+### Changed
+- F12 now enters maintenance authentication instead of exposing windowed/Desktop Mode.
+
+---
+
 ## v0.30.4 — Auxiliary Display Settings / Diagnostics UI — TEST BUILD
 
 ### Added

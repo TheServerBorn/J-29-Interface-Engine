@@ -12,6 +12,7 @@ from engine.launcher import launch_program_with_handle, launch_steam_app
 from engine.emulators import launch_rom_with_handle
 from engine.config import load_identity, load_settings
 from engine.media import MediaMonitor, inspect_media
+from engine.maintenance_auth import is_configured, verify_password
 from engine.media_creator import (
     eligible_launch_key_games,
     preview_launch_key,
@@ -94,6 +95,13 @@ class J29Engine:
 
     def close_aux_display(self):
         self._aux_display.close()
+
+
+    def maintenance_auth_configured(self):
+        return is_configured()
+
+    def verify_maintenance_password(self, password):
+        return verify_password(password)
 
 
     def get_games(self):
