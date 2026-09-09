@@ -1,8 +1,8 @@
-# J29 Terminal Engine — Architecture
+# Veyllisto Interface Engine — Architecture
 
 ## Purpose
 
-J29 began as a single Python/Tkinter application designed to create a retro terminal-style game launcher for the Callisto J-29 computer project.
+Veyllisto began as a single Python/Tkinter application designed to create a retro terminal-style game launcher for a custom fictional computer project.
 
 As development progressed, the project expanded beyond a single custom launcher.
 
@@ -13,7 +13,7 @@ The architecture is now intentionally divided into four major layers:
 - Theme
 - Identity
 
-This separation allows J29 to remain flexible, extensible, and easier to maintain.
+This separation allows Veyllisto to remain flexible, extensible, and easier to maintain.
 
 ---
 
@@ -23,6 +23,8 @@ This separation allows J29 to remain flexible, extensible, and easier to maintai
 > Shell = how the user interacts with it  
 > Theme = how the shell looks and sounds  
 > Identity = whose fictional machine it is
+
+> **One Engine. Shared state. Multiple experiences.**
 
 No single shell, theme, or fictional manufacturer should be permanently hardcoded into the core engine.
 
@@ -74,9 +76,9 @@ The exact API will evolve during development.
 
 A Shell controls the user experience.
 
-The first official shell is:
+The original first-party shell is:
 
-**J-29 Terminal Shell**
+**Veyllisto Terminal Shell**
 
 The Terminal Shell currently provides:
 
@@ -89,16 +91,16 @@ The Terminal Shell currently provides:
 - Blinking cursor
 - Retro terminal presentation
 
-Future shells may provide completely different interaction models while using the same Engine.
+Veyllisto v1.0 is planned to ship with four first-party Shells that provide different interaction models while using the same Engine and shared state.
 
-Potential future shells:
+V1 first-party Shells:
 
-- Retro Console Shell
-- Linux-style Shell
-- 1980s Computer Shell
-- 1990s Desktop Shell
-- Early-2000s Desktop-Inspired Shell
-- Community-created shells
+- Veyllisto Terminal — keyboard-first immersive terminal
+- Classic Desktop — late-1980s / early-1990s graphical desktop
+- Living Room — controller-first television / couch interface
+- Arcade — cabinet-style game-first interface
+
+Future community Shells may add other interaction models without replacing or duplicating the shared Engine.
 
 ---
 
@@ -110,7 +112,7 @@ Concept example:
 
     [SHELL]
 
-    name=J-29 Terminal
+    name=Veyllisto Terminal
     version=1.0
     engine_api=1
 
@@ -126,7 +128,7 @@ Example message:
     INSTALLED ENGINE API: 1
 
     INSTALL A COMPATIBLE SHELL OR UPDATE
-    THE J29 TERMINAL ENGINE.
+    THE VEYLLISTO INTERFACE ENGINE.
 
 ---
 
@@ -199,9 +201,9 @@ Possible fields:
 Reference configuration:
 
     Manufacturer: Callisto Computer Systems
-    System Name: J-29 Terminal OS
-    Model: J-29 Personal Terminal
-    Unit ID: J29-001
+    System Name: Veyllisto Terminal
+    Model: Veyllisto Reference Terminal
+    Unit ID: Veyllisto-001
 
 Alternate configuration:
 
@@ -259,7 +261,7 @@ The Engine should identify the media's role through metadata rather than assumin
 
 Concept metadata file:
 
-    J29MEDIA.INI
+    VEYLLISTO_MEDIA.INI
 
 Possible media roles:
 
@@ -326,7 +328,7 @@ Canonical lore packs remain fixed even when loaded on a differently branded syst
 
 Beginning with v0.14, the project will gradually transition toward a structure similar to:
 
-    J29-Terminal-Engine/
+    Veyllisto-Interface-Engine/
     |
     |-- main.py
     |
@@ -378,7 +380,7 @@ The v0.14 refactor should be incremental and preserve working behavior throughou
 
 The original prototype was intentionally simple.
 
-A single `j29.py` file was sufficient to prove:
+A single `veyllisto.py` file was sufficient to prove:
 
 - The retro terminal concept
 - Game launching
@@ -403,7 +405,7 @@ continuing to place all functionality into one file would make the software incr
 
 The architecture pivot was therefore made before the project became deeply coupled to the original prototype.
 
-The v0.13 prototype remains preserved as a historical and functional reference.
+The early terminal prototype remains preserved as a historical and functional reference.
 
 ---
 
@@ -417,7 +419,7 @@ Development will continue using:
 
 > Big vision. Small versions. Stable checkpoints.
 
-The immediate priority remains delivering a stable v1.0 J-29 Terminal experience.
+The immediate priority is delivering a stable Veyllisto v1.0 experience across the four approved first-party Shells.
 
 ## v0.25 Emulator Layer
 
