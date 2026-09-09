@@ -8,8 +8,8 @@ from engine.games import load_games
 from engine.steam import discover_steam_games
 from engine.roms import discover_rom_games
 from engine.game_state import load_game_state, save_game_state
-from engine.launcher import launch_program, launch_steam_app
-from engine.emulators import launch_rom_with_status
+from engine.launcher import launch_program_with_handle, launch_steam_app
+from engine.emulators import launch_rom_with_handle
 from engine.config import load_identity, load_settings
 from engine.media import MediaMonitor, inspect_media
 from engine.media_creator import (
@@ -34,6 +34,8 @@ from engine.system_info import (
 class J29Engine:
     def __init__(self):
         self._last_launch_error = ""
+        self._last_launch_process = None
+        self._last_launch_type = ""
         self._media_monitor = MediaMonitor()
 
         settings = load_settings()
@@ -45,6 +47,12 @@ class J29Engine:
 
     def get_last_launch_error(self):
         return self._last_launch_error
+
+    def get_last_launch_process(self):
+        return self._last_launch_process
+
+    def get_last_launch_type(self):
+        return self._last_launch_type
 
     def play_sound(self, event_name):
         return self._audio.play(event_name)
@@ -174,11 +182,20 @@ class J29Engine:
 
     def launch_game(self, game):
         self._last_launch_error = ""
+        self._last_launch_process = None
+        self._last_launch_type = ""
 
         if not game:
             self._last_launch_error = "PROGRAM RECORD NOT AVAILABLE"
+            self.set_aux_display("LAUNCH_FAILED", "LAUNCH FAILED", "PROGRAM")
             return False
 
+        title = str(
+            game.get("title")
+            or game.get("name")
+            or game.get("id")
+            or "PROGRAM"
+        ).strip()
         launch_type = str(game.get("launch_type", "EXECUTABLE")).upper()
 
         if launch_type == "LIBRARY":
@@ -197,32 +214,41 @@ class J29Engine:
                     if target_game_id
                     else "LIBRARY GAME ID NOT PROVIDED"
                 )
+                self.set_aux_display("LAUNCH_FAILED", "LAUNCH FAILED", title[:32])
                 return False
-
-            # Hand the request back to the normal J-29 launcher pipeline.
-            # The resolved target determines Steam/ROM/executable behavior.
             return self.launch_game(target)
+
+        self._last_launch_type = launch_type
+        self.set_aux_display("GAME_LAUNCHING", "LAUNCHING", title[:32])
 
         if launch_type == "STEAM":
             launched = launch_steam_app(game.get("steam_id"))
             if not launched:
                 self._last_launch_error = "STEAM LAUNCH FAILED"
         elif launch_type == "EXECUTABLE":
-            launched = launch_program(
+            launched, process = launch_program_with_handle(
                 game.get("executable_path") or game.get("path")
             )
+            self._last_launch_process = process
             if not launched:
                 self._last_launch_error = "PROGRAM NOT AVAILABLE"
         elif launch_type == "ROM":
-            launched, detail = launch_rom_with_status(game)
+            launched, detail, process = launch_rom_with_handle(game)
+            self._last_launch_process = process
             if not launched:
                 self._last_launch_error = detail
         else:
             launched = False
             self._last_launch_error = f"UNSUPPORTED LAUNCH TYPE: {launch_type}"
 
-        if launched and game.get("id"):
-            self.record_recent_game(game["id"])
+        if launched:
+            # Keep GAME_LAUNCHING visible long enough for the shell/display
+            # layer to present it intentionally. The Terminal Shell promotes
+            # the session to GAME_RUNNING after a short non-blocking delay.
+            if game.get("id"):
+                self.record_recent_game(game["id"])
+        else:
+            self.set_aux_display("LAUNCH_FAILED", "LAUNCH FAILED", title[:32])
 
         return launched
 

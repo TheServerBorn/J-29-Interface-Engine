@@ -3,6 +3,7 @@ from tkinter import Tk, Label, Canvas
 from engine.core import J29Engine
 from pathlib import Path
 
+import time
 engine = J29Engine()
 identity = engine.get_identity()
 settings = engine.get_settings()
@@ -366,7 +367,7 @@ def reboot_terminal():
         text=""
     )
 
-    start_boot_sequence()
+    start_boot_sequence(aux_state="REBOOTING")
 
 def handle_command_input(event):
     global command_buffer
@@ -1398,11 +1399,13 @@ def draw_media_prompt():
     else:
         aux_title = volume_name
 
-    engine.set_aux_display(
-        "MEDIA_DETECTED",
-        "MEDIA DETECTED",
-        str(aux_title)[:32],
-    )
+    aux_state = getattr(engine.get_aux_display_state(), "state", "")
+    if not aux_game_session_active and aux_state != "LAUNCH_FAILED":
+        engine.set_aux_display(
+            "MEDIA_DETECTED",
+            "MEDIA DETECTED",
+            str(aux_title)[:32],
+        )
 
     if metadata.get("valid") and metadata.get("type") == "COLLECTION":
         title = (
@@ -1577,6 +1580,107 @@ def _launch_display_name(game):
     )
 
 
+def _aux_ready_if_session_active():
+    global aux_game_session_active, aux_game_process
+
+    if not aux_game_session_active:
+        return
+
+    aux_game_session_active = False
+    aux_game_process = None
+    engine.set_aux_display("READY", "J-29", "READY")
+
+
+def _poll_aux_game_process():
+    """Return the auxiliary display to READY when a tracked process exits."""
+    global aux_game_session_active, aux_game_process
+
+    if not aux_game_session_active or aux_game_process is None:
+        return
+
+    try:
+        running = aux_game_process.poll() is None
+    except Exception:
+        running = False
+
+    if running:
+        root.after(500, _poll_aux_game_process)
+    else:
+        _aux_ready_if_session_active()
+
+
+def _aux_focus_return(event=None):
+    """Steam fallback: READY when the user returns focus to J-29."""
+    if not aux_game_session_active:
+        return
+
+    if time.monotonic() - aux_game_session_started < 3.0:
+        return
+
+    if engine.get_last_launch_type() == "STEAM":
+        _aux_ready_if_session_active()
+
+
+def _begin_aux_game_session():
+    global aux_game_session_active, aux_game_session_started, aux_game_process
+
+    aux_game_session_active = True
+    aux_game_session_started = time.monotonic()
+    aux_game_process = engine.get_last_launch_process()
+
+    if aux_game_process is not None:
+        root.after(500, _poll_aux_game_process)
+
+
+def _promote_aux_game_running(game):
+    """
+    Promote LAUNCHING -> RUNNING without delaying the external game itself.
+
+    If a tracked executable/emulator exits before the short visibility window
+    ends, _poll_aux_game_process() will already have returned the display to
+    READY and this function intentionally does nothing.
+    """
+    if not aux_game_session_active:
+        return
+
+    state = engine.get_aux_display_state()
+    if getattr(state, "state", "") != "GAME_LAUNCHING":
+        return
+
+    title = str(
+        game.get("title")
+        or game.get("name")
+        or game.get("id")
+        or "PROGRAM"
+    ).strip()
+
+    engine.set_aux_display("GAME_RUNNING", "RUNNING", title[:32])
+
+
+def _schedule_aux_launch_failure_reset():
+    def reset_if_still_failed():
+        state = engine.get_aux_display_state()
+        if getattr(state, "state", "") != "LAUNCH_FAILED":
+            return
+
+        if current_screen == "media_prompt" and pending_media:
+            game = pending_media.get("game") or {}
+            metadata = pending_media.get("metadata") or {}
+            title = (
+                pending_media.get("collection_title")
+                or metadata.get("title")
+                or game.get("name")
+                or game.get("title")
+                or pending_media.get("volume_name")
+                or "MEDIA"
+            )
+            engine.set_aux_display("MEDIA_DETECTED", "MEDIA DETECTED", str(title)[:32])
+        else:
+            engine.set_aux_display("READY", "J-29", "READY")
+
+    root.after(1800, reset_if_still_failed)
+
+
 def draw_launch_transition(game):
     """Show an immediate acknowledgement while an external program starts."""
     global current_screen
@@ -1615,6 +1719,7 @@ def launch_game_with_transition(game, on_success=None, on_failure=None):
 
     if not launched:
         engine.play_sound("error")
+        _schedule_aux_launch_failure_reset()
         if on_failure:
             on_failure()
         else:
@@ -1623,6 +1728,13 @@ def launch_game_with_transition(game, on_success=None, on_failure=None):
                 or "PROGRAM NOT AVAILABLE"
             )
         return False
+
+    _begin_aux_game_session()
+
+    # Give GAME_LAUNCHING an intentional, visible window on auxiliary displays.
+    # This does NOT delay or block the launched game; only the display state is
+    # promoted later.
+    root.after(900, lambda g=game: _promote_aux_game_running(g))
 
     # External launchers normally return control before their window is ready.
     # Keep the launch acknowledgement visible long enough to bridge that gap.
@@ -1790,6 +1902,9 @@ pending_media = None
 media_queue = []
 available_media = {}
 media_poll_active = True
+aux_game_session_active = False
+aux_game_session_started = 0.0
+aux_game_process = None
 
 def remember_current_screen():
     if current_screen != "boot":
@@ -1844,7 +1959,8 @@ def show_main_menu():
     global current_screen, selected_option
 
     current_screen = "main"
-    engine.set_aux_display("READY", "J-29", "READY")
+    if not aux_game_session_active:
+        engine.set_aux_display("READY", "J-29", "READY")
     selected_option = 0
 
     scanline_canvas.itemconfig(
@@ -2324,10 +2440,17 @@ def show_system_info():
 
     set_footer("ESC BACK")
 
-def start_boot_sequence():
+def start_boot_sequence(aux_state="BOOTING"):
 
     global current_screen
     current_screen = "boot"
+
+    aux_state = str(aux_state or "BOOTING").strip().upper()
+    if aux_state == "REBOOTING":
+        engine.set_aux_display("REBOOTING", "J-29", "REBOOTING")
+    else:
+        engine.set_aux_display("BOOTING", "J-29", "BOOTING")
+
     engine.play_sound("boot")
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
     set_title(
@@ -2906,6 +3029,7 @@ def blink_cursor():
 
 def run():
     root.bind("<Key>", key_pressed)
+    root.bind("<FocusIn>", _aux_focus_return, add="+")
     engine.set_aux_display("BOOTING", "J-29", "BOOTING")
 
     if settings["boot_sequence"]:

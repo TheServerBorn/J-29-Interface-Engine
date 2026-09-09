@@ -7,16 +7,22 @@ import subprocess
 import webbrowser
 
 
-def launch_program(program_path):
+def launch_program_with_handle(program_path):
+    """Launch an executable and preserve its process handle for lifecycle tracking."""
     if not program_path:
-        return False
+        return False, None
 
     try:
-        subprocess.Popen([program_path])
-        return True
+        process = subprocess.Popen([program_path])
+        return True, process
     except (OSError, ValueError):
-        return False
+        return False, None
 
+
+def launch_program(program_path):
+    """Backward-compatible boolean executable launch helper."""
+    launched, _process = launch_program_with_handle(program_path)
+    return launched
 
 def launch_uri(uri):
     """Open an OS-registered URI such as steam:// on any supported platform."""

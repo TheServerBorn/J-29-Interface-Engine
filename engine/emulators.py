@@ -390,76 +390,87 @@ def find_profile(game, profiles=None):
     return None
 
 
-def _launch_with_template(executable, template, rom_path, game):
+def _launch_with_template_handle(executable, template, rom_path, game):
     formatted = template.replace("{rom}", str(rom_path))
 
     if "{core}" in formatted:
         core_path, core_detail = resolve_retroarch_core(executable, game)
         if not core_path:
-            return False, core_detail
+            return False, core_detail, None
         formatted = formatted.replace("{core}", core_path)
 
     try:
         args = shlex.split(formatted, posix=True)
-        subprocess.Popen([executable, *args])
-        return True, "PROGRAM LAUNCHED"
+        process = subprocess.Popen([executable, *args])
+        return True, "PROGRAM LAUNCHED", process
     except ValueError:
-        return False, "INVALID EMULATOR ARGUMENTS"
+        return False, "INVALID EMULATOR ARGUMENTS", None
     except OSError as exc:
-        return False, f"EMULATOR LAUNCH FAILED: {exc.__class__.__name__}"
+        return False, f"EMULATOR LAUNCH FAILED: {exc.__class__.__name__}", None
 
 
-def launch_rom_with_status(game):
-    """Launch a ROM using explicit, standalone, or RetroArch resolution."""
+def _launch_with_template(executable, template, rom_path, game):
+    launched, detail, _process = _launch_with_template_handle(
+        executable, template, rom_path, game
+    )
+    return launched, detail
+
+
+def launch_rom_with_handle(game):
+    """Launch a ROM and return (launched, detail, process)."""
     rom_value = game.get("rom_path") or game.get("path")
     rom_value = os.path.expandvars(os.path.expanduser(str(rom_value or "").strip()))
     if not rom_value:
-        return False, "ROM PATH NOT CONFIGURED"
+        return False, "ROM PATH NOT CONFIGURED", None
 
     rom_path = Path(rom_value)
     if not rom_path.exists():
-        return False, "ROM FILE NOT FOUND"
+        return False, "ROM FILE NOT FOUND", None
 
-    # 1. Explicit emulator profile always wins.
     explicit_emulator = str(game.get("emulator", "") or "").strip()
     if explicit_emulator:
         profile = find_profile(game)
         if not profile:
-            return False, f"EMULATOR PROFILE NOT FOUND: {explicit_emulator}"
+            return False, f"EMULATOR PROFILE NOT FOUND: {explicit_emulator}", None
 
         executable = _resolve_executable(_platform_executable(profile))
         if not executable:
-            return False, f"EMULATOR NOT FOUND: {profile.get('name') or profile.get('id')}"
+            return False, f"EMULATOR NOT FOUND: {profile.get('name') or profile.get('id')}", None
 
         template = profile.get("arguments") or '"{rom}"'
-        return _launch_with_template(executable, template, rom_path, game)
+        return _launch_with_template_handle(executable, template, rom_path, game)
 
     platform_name = str(game.get("platform", "") or "").strip().upper()
 
-    # 2. Dedicated standalone emulators for platforms where they are preferred.
     if platform_name in _STANDALONE_EMULATORS:
         standalone = resolve_standalone_emulator(game)
         if not standalone:
-            return standalone_support_status(game)
+            _launched, detail = standalone_support_status(game)
+            return False, detail, None
 
-        return _launch_with_template(
+        return _launch_with_template_handle(
             standalone["executable"],
             standalone["arguments"],
             rom_path,
             game,
         )
 
-    # 3. Otherwise use a matching configured profile, typically RetroArch.
     profile = find_profile(game)
     if not profile:
-        return False, f"NO EMULATOR PROFILE FOR {platform_name or 'UNKNOWN'}"
+        return False, f"NO EMULATOR PROFILE FOR {platform_name or 'UNKNOWN'}", None
 
     executable = _resolve_executable(_platform_executable(profile))
     if not executable:
-        return False, f"EMULATOR NOT FOUND: {profile.get('name') or profile.get('id')}"
+        return False, f"EMULATOR NOT FOUND: {profile.get('name') or profile.get('id')}", None
 
     template = profile.get("arguments") or '"{rom}"'
-    return _launch_with_template(executable, template, rom_path, game)
+    return _launch_with_template_handle(executable, template, rom_path, game)
+
+
+def launch_rom_with_status(game):
+    """Backward-compatible ROM launch helper with diagnostic detail."""
+    launched, detail, _process = launch_rom_with_handle(game)
+    return launched, detail
 
 
 def launch_rom(game):
