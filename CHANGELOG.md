@@ -1,3 +1,15 @@
+## v0.31.3 — Main Menu & Settings Consolidation — TEST BUILD
+
+### Changed
+- Simplified the main menu to Game Library, Favorites, Recent Games,
+  contextual Physical Media, Settings, and Exit.
+- Moved System Info, Auxiliary Display, and Media Tools into a regular-user
+  Settings submenu.
+- Preserved existing terminal command shortcuts and Maintenance Terminal
+  separation.
+
+---
+
 ## v0.31.2 — Editable Maintenance Settings — TEST BUILD
 
 ### Added

@@ -432,6 +432,9 @@ def update_footer():
     elif current_screen == "system":
         set_footer("ESC BACK")
 
+    elif current_screen == "settings_menu":
+        set_footer("↑↓ MOVE   ENTER SELECT   ESC BACK")
+
     elif current_screen == "aux_display":
         set_footer("↑↓ MOVE   ENTER SELECT   R REFRESH   ESC BACK")
 
@@ -528,6 +531,9 @@ def clear_current_screen():
 
     elif current_screen == "system":
         show_system_info()
+
+    elif current_screen == "settings_menu":
+        draw_settings_menu()
 
     elif current_screen == "aux_display":
         draw_aux_display_diagnostics()
@@ -1049,6 +1055,47 @@ def return_from_maintenance():
     maintenance_message = ""
     engine.set_aux_display("READY", "J-29", "READY")
     show_main_menu()
+
+
+
+def get_settings_menu_options():
+    return [
+        ("SYSTEM INFO", "system"),
+        ("AUXILIARY DISPLAY", "aux_display"),
+        ("MEDIA TOOLS", "media_tools"),
+        ("BACK", "back"),
+    ]
+
+
+def show_settings_menu(reset_selection=True):
+    global current_screen, selected_settings_option
+
+    current_screen = "settings_menu"
+
+    if reset_selection:
+        selected_settings_option = 0
+
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "====================================\n"
+        "              SETTINGS\n"
+        "===================================="
+    )
+    set_menu_top(165)
+    draw_settings_menu()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_settings_menu():
+    options = get_settings_menu_options()
+    lines = []
+
+    for index, (label, _action) in enumerate(options):
+        marker = "> " if index == selected_settings_option else "  "
+        lines.append(marker + label)
+
+    set_menu("\n".join(lines))
+    update_footer()
 
 
 def get_aux_display_options():
@@ -2503,6 +2550,7 @@ selected_game_record = None
 selected_media_item = 0
 selected_media_tool = 0
 selected_aux_option = 0
+selected_settings_option = 0
 selected_maintenance_option = 0
 selected_maintenance_setting = 0
 maintenance_password_buffer = ""
@@ -2583,6 +2631,9 @@ def go_back():
     elif previous == "aux_display":
         show_aux_display_diagnostics()
 
+    elif previous == "settings_menu":
+        show_settings_menu(reset_selection=False)
+
     elif previous == "help":
         show_command_help()
 
@@ -2628,18 +2679,15 @@ def get_main_menu_options():
         ("GAME LIBRARY", "games"),
         ("FAVORITES", "favorites"),
         ("RECENT GAMES", "recent"),
-        ("MEDIA TOOLS", "media_tools"),
     ]
 
-    # Physical media is contextual: it exists only while at least one
-    # recognized mounted medium is still present. Dismissing the automatic
-    # insertion prompt therefore never makes the medium unreachable.
+    # Physical media remains a first-class contextual action on the main
+    # screen because inserted media is part of the immediate J-29 experience.
     if available_media:
         options.append(("PHYSICAL MEDIA", "physical_media"))
 
     options.extend([
-        ("SYSTEM INFO", "system"),
-        ("AUX DISPLAY", "aux_display"),
+        ("SETTINGS", "settings_menu"),
         ("EXIT", "exit"),
     ])
     return options
@@ -3179,7 +3227,7 @@ def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
-    global selected_aux_option
+    global selected_aux_option, selected_settings_option
     global selected_maintenance_option, selected_maintenance_setting
     global maintenance_password_buffer, maintenance_message
     global selected_creator_group
@@ -3300,7 +3348,7 @@ def key_pressed(event):
     if (
         event.keysym in ("Up", "Down")
         and current_screen in (
-            "main", "games", "favorites", "recent", "media_collection", "aux_display", "maintenance_menu",
+            "main", "games", "favorites", "recent", "media_collection", "settings_menu", "aux_display", "maintenance_menu",
             "media_tools", "media_creator_groups", "media_creator_games", "media_creator_targets",
             "media_creator_collection_games", "media_creator_collection_order",
         )
@@ -3566,14 +3614,36 @@ def key_pressed(event):
                 remember_current_screen()
                 show_recent()
 
-            elif action == "media_tools":
-                remember_current_screen()
-                show_media_tools()
-
             elif action == "physical_media":
                 reopen_current_physical_media()
 
-            elif action == "system":
+            elif action == "settings_menu":
+                remember_current_screen()
+                show_settings_menu()
+
+            elif action == "exit":
+                shutdown_terminal()
+
+    elif current_screen == "settings_menu":
+        options = get_settings_menu_options()
+
+        if event.keysym == "Up":
+            selected_settings_option = (
+                selected_settings_option - 1
+            ) % len(options)
+            draw_settings_menu()
+
+        elif event.keysym == "Down":
+            selected_settings_option = (
+                selected_settings_option + 1
+            ) % len(options)
+            draw_settings_menu()
+
+        elif event.keysym == "Return":
+            engine.play_sound("select")
+            action = options[selected_settings_option][1]
+
+            if action == "system":
                 remember_current_screen()
                 show_system_info()
 
@@ -3581,8 +3651,15 @@ def key_pressed(event):
                 remember_current_screen()
                 show_aux_display_diagnostics()
 
-            elif action == "exit":
-                shutdown_terminal()
+            elif action == "media_tools":
+                remember_current_screen()
+                show_media_tools()
+
+            elif action == "back":
+                go_back()
+
+        elif event.keysym == "Escape":
+            go_back()
 
     elif current_screen == "games":
 
