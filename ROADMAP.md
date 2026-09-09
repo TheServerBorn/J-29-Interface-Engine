@@ -1,10 +1,10 @@
-# J-29 Interface Engine — Development Roadmap
+# Veyllisto Interface Engine — Development Roadmap
 
 ## Project Goal
 
-J-29 Interface Engine is a customizable retro-computing frontend designed to make modern hardware feel like a fictional computer system.
+Veyllisto Interface Engine is a customizable retro-computing platform designed to make modern hardware feel like a dedicated fictional computer system through interchangeable interface shells.
 
-The initial v1.0 release will focus on the original J-29 vision while preserving the modular Engine + Shell architecture that allows the project to grow beyond a single interface.
+The initial v1.0 release will preserve the original Callisto J-29 vision while proving the modular Engine + Shell architecture through four distinct first-party interface experiences.
 
 Core goals include:
 
@@ -18,7 +18,8 @@ Core goals include:
 - Maintenance and recovery environments
 - Stable appliance-style operation
 - Packaged deployment
-- A shared Engine architecture capable of supporting alternate shells
+- Four first-party v1.0 shells: J-29 Terminal, Classic Desktop, Living Room, and Arcade
+- A shared Engine architecture that preserves the same library and core state across every shell
 
 Development follows one rule:
 
@@ -137,6 +138,7 @@ Planned steps include:
 - GOG / Epic and other launcher integration guidance where supported
 - ROM-library locations
 - Emulator configuration and optional emulator acquisition guidance
+- Interface Shell selection and preview
 - Theme / appearance basics
 - Audio enable/disable
 - Master volume
@@ -154,6 +156,8 @@ Experienced users should be able to bypass the guided flow and proceed directly 
 Skipping the wizard must not permanently disable it.
 
 The setup flow should remain available later through Settings.
+
+For v1.0, Guided Setup should allow users to preview and select an installed interface Shell. The selected Shell becomes the normal Veyllisto startup experience and can be changed later through Settings.
 
 ### Windows Integration
 
@@ -262,12 +266,12 @@ CALLISTO MAINTENANCE CONSOLE
 
 ### Goal
 
-Package J-29 so a target computer does not require Python development tools or a development environment.
+Package Veyllisto so a target computer does not require Python development tools or a development environment.
 
 Planned output:
 
 ```text
-J29Terminal.exe
+Veyllisto.exe
 ```
 
 or equivalent packaged release.
@@ -281,7 +285,7 @@ or equivalent packaged release.
 
 ### Target System
 
-- Packaged J-29 application
+- Packaged Veyllisto application
 - Configuration
 - Themes and assets
 - Required runtime components
@@ -299,9 +303,96 @@ or equivalent packaged release.
 
 ---
 
-# v0.36–v0.99 — Stabilization
+# v0.36 — Classic Desktop Shell
 
-After the major systems are complete, development will focus on reliability, compatibility, usability, and release readiness rather than major feature expansion.
+### Status
+
+**PLANNED**
+
+### Goal
+
+Build the first radically different presentation of the shared Veyllisto Engine and prove that core application behavior is not coupled to the J-29 Terminal.
+
+### Planned Work
+
+- Late-1980s / early-1990s desktop-inspired graphical environment
+- Mouse-and-keyboard navigation
+- Shared Veyllisto Game Library
+- Shared metadata
+- Shared favorites and recent history
+- Shared Steam and emulator launch services
+- Shared physical-media systems
+- Shared application configuration
+- Shell switching without rebuilding library state
+- Identify and remove remaining Terminal-specific Engine coupling
+- Establish a stable Shell contract for later first-party and community Shells
+
+### Design Principle
+
+> **The second Shell proves the Engine.**
+
+---
+
+# v0.37 — Living Room Shell
+
+### Status
+
+**PLANNED**
+
+### Goal
+
+Create a controller-first Veyllisto experience designed for televisions, handheld PCs, and couch gaming while establishing reusable directional-navigation and input abstractions.
+
+### Planned Work
+
+- Controller-first navigation
+- Large-screen / television-friendly presentation
+- Game-focused library browsing
+- Shared favorites and recent history
+- Shared metadata and launch services
+- Controller-safe Settings access
+- Shell switching
+- Reusable directional-navigation abstraction
+- Keyboard fallback
+- Input-device failure and reconnect handling
+
+### Design Principle
+
+> **The same library should feel native from the couch.**
+
+---
+
+# v0.38 — Arcade Shell
+
+### Status
+
+**PLANNED**
+
+### Goal
+
+Create a focused cabinet-style interface for dedicated arcade systems and custom builds using the same Veyllisto Engine and shared state.
+
+### Planned Work
+
+- Arcade / cabinet-style presentation
+- Game-first navigation
+- Controller and arcade-control support through shared input abstractions
+- Shared library, metadata, favorites, and recent history
+- Shared Steam / emulator / local launch services
+- Simplified normal-operation flow
+- Safe path to shared Settings and Maintenance
+- Shell switching
+- Dedicated-system usability validation
+
+### Design Principle
+
+> **Pick a game. Play a game. Let the Engine handle the rest.**
+
+---
+
+# v0.39–v0.99 — Shell Integration, Polish & Stabilization
+
+After the four first-party Shells and major systems are complete, development will focus on integration, reliability, compatibility, usability, and release readiness rather than major feature expansion.
 
 ### Validation Areas
 
@@ -311,6 +402,16 @@ Testing will include:
 - First-launch wizard
 - Beginner / Guided Setup path
 - Power User / Manual Setup path
+- Shell selection and preview
+- J-29 Terminal
+- Classic Desktop
+- Living Room
+- Arcade
+- Shell switching
+- Shared library state across all Shells
+- Shared favorites and recent history across all Shells
+- Shared metadata and configuration across all Shells
+- Controller navigation and reconnect behavior
 - Windows integration
 - Missing games
 - Missing emulators
@@ -355,15 +456,19 @@ The priority during this phase is:
 
 ## Goal
 
-Version 1.0 will deliver the original J-29 experience on top of a stable modular Interface Engine.
+Version 1.0 will deliver a stable modular Veyllisto Interface Engine with four distinct first-party Shells built on the same shared systems.
 
-The Callisto J-29 remains the official reference implementation.
+The Callisto J-29 remains the official reference implementation and original Veyllisto Shell.
 
 ### v1.0 Reference Experience
 
 The release target includes:
 
-- J-29 Terminal Shell
+- Four first-party interface Shells:
+  - J-29 Terminal
+  - Classic Desktop
+  - Living Room
+  - Arcade
 - Modular Engine + Shell architecture
 - Configurable machine identity
 - Theme support
@@ -409,13 +514,46 @@ The v1.0 architecture must preserve:
 - Shared Engine services
 - Shell-independent core behavior
 
-The J-29 Terminal is the reference Shell.
+The J-29 Terminal is the original reference Shell.
 
-A second distinct interface shell is part of the broader v1.0 Engine demonstration requirement so the architecture is proven through more than one presentation layer. The planned reference concept is a classic late-1980s / early-1990s desktop-inspired shell using the same underlying Engine and library state.
+Veyllisto v1.0 must ship with four first-party Shells:
+
+1. **J-29 Terminal** — keyboard-first immersive terminal
+2. **Classic Desktop** — mouse-and-keyboard retro desktop environment
+3. **Living Room** — controller-first television / couch interface
+4. **Arcade** — cabinet-style game-first interface
+
+All four Shells must consume the same underlying Engine and core state. They may present capabilities differently, but they must not create separate implementations of the library, metadata, favorites, recent history, Steam integration, emulator configuration, physical media, or application settings.
+
+Planned implementation order:
+
+```text
+J-29 TERMINAL
+     │
+     ▼
+CLASSIC DESKTOP
+     │
+     ▼
+SHELL CONTRACT / ENGINE BOUNDARIES
+     │
+     ▼
+LIVING ROOM
+     │
+     ▼
+CONTROLLER / INPUT ABSTRACTION
+     │
+     ▼
+ARCADE
+     │
+     ▼
+V1 SHELL INTEGRATION & STABILIZATION
+```
+
+> **One Engine. Shared state. Multiple experiences.**
 
 ### Release Principle
 
-> **One Engine. Multiple experiences. Stable foundation.**
+> **One Engine. Shared state. Multiple experiences. Stable foundation.**
 
 ---
 
@@ -487,18 +625,18 @@ Archive media may contain optional story content without permanently installing 
 
 ---
 
-# Future Shell Packs
+# Future / Community Shell Packs
 
-The J-29 Interface Engine is designed to support additional interface shells that use the same core Engine.
+Veyllisto is designed to support additional interface Shells beyond the four first-party experiences included with v1.0.
 
 Possible future shells include:
 
-- Retro console interface
-- Linux-style terminal
-- 1980s fictional computer
-- 1990s desktop interface
-- Early-2000s desktop-inspired interface
-- Community-created shells
+- Linux-style terminals
+- Other fictional computer systems
+- Additional desktop-inspired environments
+- Specialized handheld interfaces
+- Experimental interfaces
+- Community-created Shells
 
 Compatible shell packs should be addable without replacing the shared Engine or rebuilding the user's software library.
 
@@ -526,7 +664,7 @@ This prevents incompatible shells from silently breaking an installation.
 
 # Community Vision
 
-J-29 is intended to eventually support a community of builders.
+Veyllisto is intended to support a community of builders.
 
 Users may be encouraged to share:
 
@@ -546,13 +684,13 @@ Community participation is encouraged, not required.
 
 # Open Source
 
-J-29 Interface Engine is open-source software released under the **MIT License**.
+Veyllisto Interface Engine is open-source software released under the **MIT License**.
 
 Users are free to use, modify, distribute, and build upon the software under the terms of that license.
 
 The project should remain approachable to:
 
-- Users who only want the reference J-29 experience
+- Users who only want one of the first-party Veyllisto experiences
 - Power users who want deeper configuration
 - Hardware builders
 - Theme creators
@@ -598,7 +736,7 @@ The goal is to keep every major milestone recoverable and understandable.
 
 # Scope Freeze
 
-The v1.0 roadmap is feature-frozen.
+The v1.0 roadmap is feature-frozen around the approved four-shell release scope.
 
 New ideas should generally be recorded for post-v1.0 development instead of being inserted into the initial release unless they are required for:
 
