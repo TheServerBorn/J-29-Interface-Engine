@@ -114,6 +114,11 @@ def load_settings(config_path="config/settings.ini"):
             "debug_file",
             fallback="config/aux_display_debug.json"
         ),
+        "aux_display_width": config.getint(
+            "AUXILIARY_DISPLAY",
+            "width",
+            fallback=16
+        ),
         "fullscreen_key": config.get(
             "DEVELOPMENT",
             "fullscreen_key",

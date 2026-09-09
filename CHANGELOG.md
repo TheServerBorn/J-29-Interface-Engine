@@ -1,3 +1,28 @@
+## v0.30.2 — Auxiliary Display Presentation Model — TEST BUILD
+
+### Added
+- Hardware-neutral two-line presentation model.
+- Configurable display width and deterministic truncation.
+- Lifecycle-aware state priority arbitration.
+- Temporary display events with fallback to the prior persistent state.
+
+---
+
+## v0.30.1 — Auxiliary Display Game Lifecycle — TEST BUILD
+
+### Added
+- `GAME_LAUNCHING`, `GAME_RUNNING`, and `LAUNCH_FAILED` auxiliary-display states.
+- Process-handle tracking for executable and emulator launches.
+- `READY` restoration when tracked processes exit.
+- Steam focus-return fallback for URI launches without a process handle.
+
+### Architecture
+- Launcher exposes lifetime where available.
+- Engine publishes semantic state.
+- Display adapters remain hardware-agnostic.
+
+---
+
 ## v0.30.0 — Auxiliary Display Foundation — TEST BUILD
 
 ### Added

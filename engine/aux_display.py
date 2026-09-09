@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from engine.aux_presentation import build_presentation
 
 
 @dataclass(frozen=True)
@@ -71,78 +74,146 @@ class DebugFileAuxDisplayAdapter(AuxDisplayAdapter):
 
 
 class AuxiliaryDisplayManager:
-    """
-    Engine-level semantic auxiliary-display service.
-
-    Shells report machine state. Adapters decide how that state reaches actual
-    hardware. Failures are intentionally nonfatal; the primary J-29 interface
-    must never depend on an auxiliary display being present.
-    """
-
     def __init__(self, settings=None):
         self.enabled = False
         self.adapter_name = "none"
+        self.display_width = 16
         self._adapter: AuxDisplayAdapter = NullAuxDisplayAdapter()
         self._last_message = AuxDisplayMessage("OFFLINE", "", "")
+        self._current_priority = 0
+        self._persistent_message = AuxDisplayMessage("READY", "J-29", "READY")
+        self._persistent_priority = 10
+        self._timer = None
+        self._lock = threading.RLock()
         self.configure(settings or {})
 
     def configure(self, settings):
-        try:
-            self._adapter.close()
-        except Exception:
-            pass
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
 
-        self.enabled = bool(settings.get("aux_display_enabled", False))
-        self.adapter_name = str(
-            settings.get("aux_display_adapter", "debug")
-        ).strip().lower()
+            try:
+                self._adapter.close()
+            except Exception:
+                pass
 
-        if not self.enabled:
-            self._adapter = NullAuxDisplayAdapter()
-            return
+            self.enabled = bool(settings.get("aux_display_enabled", False))
+            self.adapter_name = str(settings.get("aux_display_adapter", "debug")).strip().lower()
+            self.display_width = max(8, int(settings.get("aux_display_width", 16)))
 
-        if self.adapter_name == "debug":
-            self._adapter = DebugFileAuxDisplayAdapter(
-                settings.get(
-                    "aux_display_debug_file",
-                    "config/aux_display_debug.json",
+            if not self.enabled:
+                self._adapter = NullAuxDisplayAdapter()
+                return
+
+            if self.adapter_name == "debug":
+                self._adapter = DebugFileAuxDisplayAdapter(
+                    settings.get("aux_display_debug_file", "config/aux_display_debug.json")
                 )
-            )
-        else:
-            # Unknown hardware adapters fail closed/silent until explicitly
-            # implemented in a later v0.30 slice.
-            self._adapter = NullAuxDisplayAdapter()
+            else:
+                self._adapter = NullAuxDisplayAdapter()
 
-    def show(self, state, line1="", line2=""):
-        message = AuxDisplayMessage(
-            state=str(state or "STATUS").strip().upper(),
-            line1=str(line1 or "").strip(),
-            line2=str(line2 or "").strip(),
-        )
+    def _emit(self, message, priority):
         self._last_message = message
-
+        self._current_priority = priority
         if not self.enabled:
             return False
-
         try:
             return bool(self._adapter.show(message))
         except Exception:
             return False
 
+    def _restore_persistent(self):
+        with self._lock:
+            self._timer = None
+            self._emit(self._persistent_message, self._persistent_priority)
+
+    def _transition_allowed(self, next_state, next_priority, force):
+        if force:
+            return True
+
+        current_state = self._last_message.state
+
+        # SHUTDOWN is terminal for the current app session. Only a new BOOTING
+        # state (new process/session) or an explicit force may replace it.
+        if current_state == "SHUTDOWN":
+            return next_state == "BOOTING"
+
+        # READY is a legitimate lifecycle completion state after boot, reboot,
+        # maintenance, launch failure, or a running game. It is not a generic
+        # priority bypass.
+        if next_state == "READY":
+            return current_state in {
+                "OFFLINE",
+                "READY",
+                "BOOTING",
+                "REBOOTING",
+                "MAINTENANCE",
+                "GAME_LAUNCHING",
+                "GAME_RUNNING",
+                "LAUNCH_FAILED",
+                "MEDIA_DETECTED",
+            }
+
+        return next_priority >= self._current_priority
+
+    def show(self, state, line1="", line2="", force=False):
+        presentation = build_presentation(state, line1, line2, width=self.display_width)
+        message = AuxDisplayMessage(
+            presentation.state,
+            presentation.line1,
+            presentation.line2,
+        )
+
+        with self._lock:
+            if not self._transition_allowed(
+                presentation.state,
+                presentation.priority,
+                force,
+            ):
+                return False
+
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+
+            if presentation.persistent:
+                self._persistent_message = message
+                self._persistent_priority = presentation.priority
+
+            result = self._emit(message, presentation.priority)
+
+            if not presentation.persistent and presentation.timeout_ms:
+                self._timer = threading.Timer(
+                    presentation.timeout_ms / 1000.0,
+                    self._restore_persistent,
+                )
+                self._timer.daemon = True
+                self._timer.start()
+
+            return result
+
     def clear(self):
-        self._last_message = AuxDisplayMessage("CLEAR", "", "")
-        if not self.enabled:
-            return False
-        try:
-            return bool(self._adapter.clear())
-        except Exception:
-            return False
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+
+            message = AuxDisplayMessage("CLEAR", "", "")
+            self._persistent_message = message
+            self._persistent_priority = 0
+            return self._emit(message, 0)
 
     def get_last_message(self):
         return self._last_message
 
     def close(self):
-        try:
-            self._adapter.close()
-        except Exception:
-            pass
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+            try:
+                self._adapter.close()
+            except Exception:
+                pass
+
