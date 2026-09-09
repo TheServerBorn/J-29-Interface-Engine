@@ -1,14 +1,14 @@
-# Contributing to J29 Terminal Engine
+# Contributing to Veyllisto Interface Engine
 
-Thank you for your interest in the J29 Terminal Engine.
+Thank you for your interest in the Veyllisto Interface Engine.
 
-J29 is being developed as an open-source retro-computing frontend platform built around games, physical media, customizable fictional computer systems, and community creativity.
+Veyllisto is being developed as an open-source retro-computing frontend platform built around games, physical media, customizable fictional computer systems, and community creativity.
 
-The goal is not only to build the original J-29 Terminal, but to create an engine that other people can adapt to their own projects.
+The goal is not only to build the original Veyllisto Terminal, but to create an engine that other people can adapt to their own projects.
 
 Contributions are welcome, but never required.
 
-If you build something cool with J29, we would love to see it.
+If you build something cool with Veyllisto, we would love to see it.
 
 ---
 
@@ -41,7 +41,7 @@ If you encounter a problem, please open a GitHub Issue.
 
 When possible, include:
 
-- J29 Engine version
+- Veyllisto Engine version
 - Shell version
 - Windows version
 - Hardware information
@@ -65,7 +65,7 @@ Before submitting a new feature request, please consider the current project sco
 
 The primary development goal is currently:
 
-> Complete a stable J29 Terminal Engine v1.0.
+> Complete a stable Veyllisto Interface Engine v1.0.
 
 Large new ideas may be considered for post-v1.0 development rather than added immediately.
 
@@ -73,16 +73,16 @@ When suggesting a feature, explain:
 
 - What problem it solves
 - How you imagine it working
-- Why it fits the J29 project
+- Why it fits the Veyllisto project
 - Whether it affects the Engine, Shell, Theme, or hardware integration
 
 ---
 
 # Sharing Your Build
 
-One of the goals of J29 is to encourage people to create their own fictional computers and retro gaming systems.
+One of the goals of Veyllisto is to encourage people to create their own fictional computers and retro gaming systems.
 
-If you build a machine using J29, please consider sharing it with the community.
+If you build a machine using Veyllisto, please consider sharing it with the community.
 
 Examples include:
 
@@ -123,24 +123,22 @@ Community-created themes are encouraged.
 
 # Shells
 
-Shells provide alternate interfaces for the J29 Engine.
+Shells provide alternate interfaces for the Veyllisto Engine. Veyllisto v1.0 is planned to ship with four first-party Shells.
 
-The original reference Shell is:
+The original first-party reference Shell is:
 
-**J-29 Terminal Shell**
+**Veyllisto Terminal Shell**
 
-Future community shells may provide completely different experiences.
+The v1.0 first-party Shell suite includes:
 
-Examples might include:
+- Veyllisto Terminal — keyboard-first terminal experience
+- Classic Desktop — mouse-and-keyboard retro desktop experience
+- Living Room — controller-first television / couch experience
+- Arcade — cabinet-style game-first experience
 
-- Retro console interfaces
-- Text-only computer systems
-- Graphical desktop environments
-- 1980s-inspired computer interfaces
-- 1990s-inspired desktop interfaces
-- Original fictional computer systems
+Future community Shells may provide completely different experiences, including original fictional systems, specialized handheld interfaces, alternate terminals, and experimental graphical environments.
 
-Shells should communicate with the J29 Engine through documented interfaces rather than duplicating core functionality whenever possible.
+Shells should communicate with the Veyllisto Engine through documented interfaces rather than duplicating core functionality. Shared library state, metadata, favorites, recent history, launcher integrations, physical media, and configuration belong to the Engine.
 
 Future Shell packages will include compatibility information describing which Engine API versions they support.
 
@@ -148,7 +146,7 @@ Future Shell packages will include compatibility information describing which En
 
 # Machine Identity
 
-J29 is designed so users can create their own fictional computer identity.
+Veyllisto is designed so users can create their own fictional computer identity.
 
 A custom system may define:
 
@@ -167,7 +165,7 @@ The Callisto J-29 is the official reference configuration, but users are encoura
 
 # Physical Media
 
-J29 physical media support is intended to be format-agnostic.
+Veyllisto physical media support is intended to be format-agnostic.
 
 Community experiments may involve:
 
@@ -185,7 +183,7 @@ Please share successful hardware configurations and compatibility findings.
 
 # Lore and Story Content
 
-The J29 Engine may eventually support optional fictional archive and lore systems.
+The Veyllisto Engine may eventually support optional fictional archive and lore systems.
 
 Please avoid posting spoilers for official lore content in unrelated Issues or Discussions.
 
@@ -219,9 +217,11 @@ Pull Requests should ideally:
 
 # Development Philosophy
 
-J29 development follows:
+Veyllisto development follows:
 
 > Big vision. Small versions. Stable checkpoints.
+
+> **One Engine. Shared state. Multiple experiences.**
 
 Changes should be implemented incrementally whenever possible.
 
@@ -290,7 +290,7 @@ User-specific configuration should remain outside the public repository when app
 
 Be respectful.
 
-People participating in J29 may have very different levels of programming, electronics, fabrication, or computer experience.
+People participating in Veyllisto may have very different levels of programming, electronics, fabrication, or computer experience.
 
 Constructive feedback is encouraged.
 
@@ -302,7 +302,7 @@ The goal is to help people build interesting things.
 
 # Community Philosophy
 
-J29 exists because building computers should be fun.
+Veyllisto exists because building computers should be fun.
 
 Take the Engine.
 
