@@ -1,3 +1,71 @@
+## v0.30.4 — Auxiliary Display Settings / Diagnostics UI — TEST BUILD
+
+### Added
+- In-app Auxiliary Display diagnostics screen.
+- AUX DISPLAY main-menu entry.
+- AUX / AUXDISPLAY / DISPLAY commands.
+- Live adapter status, width, port, and last-error reporting.
+- TEST DISPLAY and RELOAD ADAPTER actions.
+- Temporary DISPLAY_TEST state.
+
+---
+
+## v0.30.3 — Physical Display Adapter / Hardware Prep — TEST BUILD
+
+### Added
+- Physical-display adapter connection/status contract.
+- USB/serial display transport.
+- Automatic reconnect attempts.
+- Graceful missing/disconnected hardware behavior.
+- Engine-visible auxiliary display connection/error status.
+- Serial port, baud-rate, and reconnect settings.
+
+### Protocol
+- Serial adapters receive already-formatted packets as:
+  `J29|STATE|LINE1|LINE2`
+
+---
+
+## v0.30.2 — Auxiliary Display Presentation Model — TEST BUILD
+
+### Added
+- Hardware-neutral two-line presentation model.
+- Configurable display width and deterministic truncation.
+- Lifecycle-aware state priority arbitration.
+- Temporary display events with fallback to the prior persistent state.
+
+---
+
+## v0.30.1 — Auxiliary Display Game Lifecycle — TEST BUILD
+
+### Added
+- `GAME_LAUNCHING`, `GAME_RUNNING`, and `LAUNCH_FAILED` auxiliary-display states.
+- Process-handle tracking for executable and emulator launches.
+- `READY` restoration when tracked processes exit.
+- Steam focus-return fallback for URI launches without a process handle.
+
+### Architecture
+- Launcher exposes lifetime where available.
+- Engine publishes semantic state.
+- Display adapters remain hardware-agnostic.
+
+---
+
+## v0.30.0 — Auxiliary Display Foundation — TEST BUILD
+
+### Added
+- Hardware-agnostic auxiliary-display engine service.
+- Adapter interface with Null and debug-file implementations.
+- Configurable `[AUXILIARY_DISPLAY]` settings.
+- Initial semantic states for boot, ready, media detection, maintenance, and shutdown.
+
+### Architecture
+- Shells report semantic machine state.
+- Display hardware remains isolated behind adapters.
+- Auxiliary-display failures are nonfatal.
+
+---
+
 ## v0.29.3 — Physical Media Creator Reuse / Replace — TEST BUILD
 **Date:** 2026-09-05
 

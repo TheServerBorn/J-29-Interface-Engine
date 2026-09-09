@@ -99,6 +99,41 @@ def load_settings(config_path="config/settings.ini"):
             "master_volume",
             fallback=70
         ),
+        "aux_display_enabled": config.getboolean(
+            "AUXILIARY_DISPLAY",
+            "enabled",
+            fallback=False
+        ),
+        "aux_display_adapter": config.get(
+            "AUXILIARY_DISPLAY",
+            "adapter",
+            fallback="debug"
+        ),
+        "aux_display_debug_file": config.get(
+            "AUXILIARY_DISPLAY",
+            "debug_file",
+            fallback="config/aux_display_debug.json"
+        ),
+        "aux_display_width": config.getint(
+            "AUXILIARY_DISPLAY",
+            "width",
+            fallback=16
+        ),
+        "aux_display_serial_port": config.get(
+            "AUXILIARY_DISPLAY",
+            "serial_port",
+            fallback=""
+        ),
+        "aux_display_serial_baudrate": config.getint(
+            "AUXILIARY_DISPLAY",
+            "serial_baudrate",
+            fallback=115200
+        ),
+        "aux_display_reconnect_seconds": config.getfloat(
+            "AUXILIARY_DISPLAY",
+            "reconnect_seconds",
+            fallback=2.0
+        ),
         "fullscreen_key": config.get(
             "DEVELOPMENT",
             "fullscreen_key",
