@@ -2850,6 +2850,9 @@ def go_back():
     elif previous == "settings_menu":
         show_settings_menu(reset_selection=False)
 
+    elif previous == "maintenance_menu":
+        show_maintenance_menu(reset_selection=False)
+
     elif previous == "maintenance_advanced":
         show_advanced_terminal(reset=False)
 
