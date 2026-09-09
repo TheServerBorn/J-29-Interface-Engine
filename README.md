@@ -8,8 +8,8 @@ A modular retro-computing interface engine for games, physical media, fictional 
 
 ## Project Status
 
-**Latest completed milestone:** `v0.29.0 — Physical Media Creator`  
-**Current development:** `v0.30 — OLED / Auxiliary Display Support`  
+**Latest completed milestone:** `v0.31 — Maintenance Terminal`  
+**Next development milestone:** `v0.32 — Guided First-Launch Setup`  
 **Primary release target:** Windows  
 **License:** MIT
 
@@ -100,6 +100,9 @@ Current responsibilities include:
 - Machine identity
 - Application settings
 - Semantic audio services
+- Auxiliary-display state publishing and adapter management
+- Maintenance authentication
+- Controlled application / host system actions
 
 The Engine exposes shared functionality so interface shells do not need to duplicate core application logic.
 
@@ -127,6 +130,10 @@ The Terminal Shell provides:
 - CRT-style presentation
 - Configurable identity
 - Semantic audio feedback
+- Auxiliary-display status integration
+- Authenticated Maintenance Terminal
+- Advanced Maintenance Terminal
+- Context-aware Settings / Media Tools navigation
 
 The v1.0 architecture is intended to support more than one interface presentation while preserving the same Engine and library state.
 
@@ -186,7 +193,7 @@ Model: PX-4
 ## Terminal Interface
 
 - Fullscreen retro-terminal presentation
-- Green-on-black reference theme
+- Callisto Green, Callisto Amber, and Callisto White reference themes
 - CRT-style scanlines
 - Animated boot sequence
 - Blinking block cursor
@@ -540,6 +547,92 @@ The Windows playback implementation maintains a persistent output path so very s
 
 ---
 
+# Auxiliary Display Support
+
+v0.30 added an optional Engine-level auxiliary-display system.
+
+The Engine publishes semantic states while adapters decide how those states are presented. This keeps the main application independent of any one display module.
+
+Validated states include:
+
+- BOOTING
+- READY
+- MEDIA DETECTED
+- LAUNCHING
+- RUNNING
+- REBOOTING
+- SHUTDOWN
+
+Auxiliary-display support remains optional. J-29 continues operating normally when no secondary display is present.
+
+The Terminal Settings environment can configure the auxiliary-display enabled state, adapter, and display width. Adapter reload behavior is also available for testing and maintenance.
+
+Architecture principle:
+
+> **The Engine publishes status. Hardware adapters decide how to display it.**
+
+---
+
+# Maintenance Terminal
+
+v0.31 introduced a complete authenticated maintenance environment.
+
+The Maintenance Terminal keeps administrative and recovery functions separate from normal J-29 navigation while preserving an in-universe service experience.
+
+Current capabilities include:
+
+- Password-protected maintenance access
+- Salted PBKDF2-HMAC-SHA256 credential storage
+- Constant-time password verification
+- Controlled Desktop Mode
+- Advanced Maintenance Terminal
+- Read-only System Diagnostics
+- Terminal Settings
+- Media Tools
+- Reboot Terminal
+- True process-level Restart J-29
+- Confirmed host Reboot System
+- Confirmed host Shutdown System
+- Return to normal J-29 operation
+
+The Advanced Terminal provides a controlled Callisto-style service console rather than exposing a raw host command shell.
+
+Supported commands include:
+
+```text
+HELP
+STATUS
+SETTINGS
+MEDIA
+DESKTOP
+REBOOT
+RESTART
+SYSTEM REBOOT
+SYSTEM SHUTDOWN
+RETURN
+CLEAR
+```
+
+J-29 distinguishes three different levels of restart behavior:
+
+- **Reboot Terminal** — reruns the fictional J-29 boot sequence in the current process.
+- **Restart J-29** — starts a fresh J-29 process and reloads startup configuration and themes.
+- **Reboot System / Shutdown System** — requests the corresponding host operating-system action after explicit confirmation.
+
+Settings that require a fresh process report:
+
+```text
+SAVED — RESTART J-29 TO APPLY
+```
+
+Media Tools also preserves its navigation context. When opened from regular Settings it returns to Settings; when opened from Maintenance it returns to Maintenance; and when opened from the Advanced Terminal it returns there.
+
+Design principle:
+
+> **Normal operation stays immersive. Maintenance stays available.**
+
+---
+
 # System Information
 
 J-29 can currently read host information including:
@@ -613,12 +706,16 @@ Configurable settings include or are being expanded to include:
 - Development controls
 - Interface preferences
 - Host-integration behavior
+- Theme selection
+- Auxiliary-display enabled state
+- Auxiliary-display adapter
+- Auxiliary-display width
 
 ---
 
-# Guided First-Launch Setup — Planned v0.31
+# Guided First-Launch Setup — Planned v0.32
 
-v0.31 is dedicated to making a fresh installation approachable without removing control from experienced users.
+v0.32 is dedicated to making a fresh installation approachable without removing control from experienced users.
 
 The planned first-launch screen offers two paths:
 
@@ -742,7 +839,10 @@ J-29-Interface-Engine/
 │   ├── system_info.py
 │   ├── media.py
 │   ├── media_creator.py
-│   └── audio.py
+│   ├── audio.py
+│   ├── auxiliary_display.py
+│   ├── maintenance_auth.py
+│   └── system_actions.py
 │
 ├── shells/
 │   └── terminal/
@@ -785,9 +885,9 @@ Stable functionality should remain intact while new systems are introduced.
 | v0.27 | Media Metadata & Collections | ✅ Complete |
 | v0.28.1 | Custom Audio / Callisto Audio Identity | ✅ Complete |
 | v0.29.0 | Physical Media Creator | ✅ Complete |
-| v0.30 | OLED / Auxiliary Display Support | 🚧 Current |
-| v0.31 | Guided First-Launch Setup | ⏳ Planned |
-| v0.32 | Maintenance Terminal | ⏳ Planned |
+| v0.30 | OLED / Auxiliary Display Support | ✅ Complete |
+| v0.31 | Maintenance Terminal | ✅ Complete |
+| v0.32 | Guided First-Launch Setup | ⏳ Next |
 | v0.33 | Appliance Mode | ⏳ Planned |
 | v0.34 | Boot Maintenance Console | ⏳ Planned |
 | v0.35 | Deployment Build | ⏳ Planned |

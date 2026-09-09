@@ -28,7 +28,7 @@ Development follows one rule:
 
 # Current Stable Build
 
-## v0.29.0 — Physical Media Creator
+## v0.31 — Maintenance Terminal
 
 ### Status
 
@@ -36,216 +36,79 @@ Development follows one rule:
 
 ### Goal
 
-Turn J-29 physical-media authoring into a normal user workflow so users do not need to manually edit `j29-media.ini` files or look up internal game IDs.
+Replace temporary development shortcuts with a complete in-universe maintenance environment while keeping administrative access separate from normal J-29 operation.
 
 ### Completed
 
-- Permanent `MEDIA TOOLS` entry
-- Single-game physical-media creation
-- Multi-game collection creation
-- Library/platform browsing for media creation
-- `ALL PROGRAMS` view
-- Alphabetical program sorting
-- Persistent collection selections across library groups
-- Collection naming
-- Collection item reordering
-- Safe removable-media target selection
-- Explicit write confirmation
-- Standard `j29-media.ini` generation
-- Post-write validation through the existing J-29 media reader
-- Intentional reuse / replacement of existing J-29 metadata
-- Atomic replacement of J-29 descriptors
-- Automatic rollback if replacement verification fails
-- Dedicated Steam grouping separate from local/native PC software
+- Authenticated Maintenance Terminal
+- F12 maintenance entry
+- Salted PBKDF2-HMAC-SHA256 password storage
+- Constant-time password verification
+- Masked password entry
+- Safe ACCESS GRANTED / ACCESS DENIED behavior
+- Password setup utility
+- Controlled Desktop Mode
+- Advanced Maintenance Terminal
+- Read-only System Diagnostics
+- Editable Terminal Settings
+- Maintenance access to Media Tools
+- Reboot Terminal
+- True process-level Restart J-29
+- Confirmed host Reboot System
+- Confirmed host Shutdown System
+- Context-aware return navigation
+- Main-menu and Settings consolidation
+- Callisto Green, Callisto Amber, and Callisto White theme validation
 
-### Safety
+### Advanced Terminal
 
-- The system drive is excluded from media targets
-- Fixed/internal disks are not offered as creator targets
-- Existing J-29 metadata cannot be replaced accidentally
-- Replacement requires a deliberate two-step confirmation
-- J-29 only replaces its own `j29-media.ini` descriptor
-- Unrelated files on removable media are preserved
-- Newly written metadata is verified before success is reported
-- Failed replacement verification restores the exact original descriptor
+The authenticated Advanced Terminal is a controlled J-29 service console rather than a raw host shell.
 
-### Collections
+Supported commands include:
 
-Users can:
+- `HELP`
+- `STATUS`
+- `SETTINGS`
+- `MEDIA`
+- `DESKTOP`
+- `REBOOT`
+- `RESTART`
+- `SYSTEM REBOOT`
+- `SYSTEM SHUTDOWN`
+- `RETURN` / `EXIT`
+- `CLEAR`
 
-- Select programs from multiple libraries
-- Mix Steam, ROM, and supported local software
-- Preserve selections while moving between library groups
-- Name collections
-- Reorder collection entries
-- Write ordered `type=COLLECTION` descriptors
-- Reinsert the media and browse the resulting collection through J-29
+### Restart Semantics
+
+- **REBOOT TERMINAL** reruns the fictional J-29 boot sequence inside the current process.
+- **RESTART J-29** relaunches J-29 as a fresh process so startup-loaded configuration and themes are reloaded.
+- **REBOOT SYSTEM** and **SHUTDOWN SYSTEM** request host operating-system actions after explicit confirmation.
+
+### Navigation
+
+Media Tools returns to the context that opened it:
+
+- Settings → Media Tools → Settings
+- Maintenance Terminal → Media Tools → Maintenance Terminal
+- Advanced Terminal → Media → Advanced Terminal
 
 ### Validation
 
-Full regression passed across:
-
-- Boot and normal navigation
-- Game Library
-- Favorites
-- Recent Games
-- ROM/emulator launching
-- Steam/local launching
-- Single-game media creation
-- Collection creation
-- Media write verification
-- Reuse / replace workflows
-- Hot removal and reinsertion
-- Audio behavior
-- Normal shutdown
+Full regression passed across normal J-29 operation and the Maintenance Terminal, including the final Media Tools context-return correction.
 
 ### Design Principle
 
-> **Users choose the software. J-29 writes the metadata.**
+> **Normal operation stays immersive. Maintenance stays available.**
 
 ---
 
 # Previous Completed Milestone
 
-## v0.28.1 — Custom Audio / Callisto Audio Identity
+## v0.32 — Guided First-Launch Setup
 
 ### Status
 
-**COMPLETE — CROSS-HARDWARE VALIDATED**
-
-### Goal
-
-Give J-29 configurable, theme-owned audio feedback that feels like part of the machine rather than a layer added on top of it.
-
-### Completed
-
-- Engine-level `AudioManager` service
-- Theme-owned semantic sound mappings
-- Runtime audio enable/disable control
-- Master-volume support
-- Failure-safe handling for missing or unavailable sound files
-- Boot / reboot sound
-- Menu movement sound
-- Selection / confirmation sound
-- Error sound
-- Physical-media detection sound
-- Access-granted sound
-- Access-denied API / sound
-- Universal game-launch transition sound
-- Shutdown sound
-- Rapid menu-repeat throttling
-- Physical-media polling tightened to 500 ms
-- Persistent Windows audio-output path for reliable short terminal sounds
-- Callisto Rev C industrial terminal sound identity adopted as the current reference set
-
-### Audio Identity
-
-The current Callisto reference sound set uses:
-
-- Dry mechanical key / relay clicks
-- Muted CRT-era electronic beeps
-- Low-fi industrial texture
-- Minimal melody
-- Short, restrained acknowledgements
-- One cohesive retro-futuristic terminal palette
-
-### Cross-Hardware Validation
-
-- Windows laptop: PASS
-- Windows desktop: PASS
-- Short one-shot WAV playback: PASS
-- Rapid menu-repeat stress test: PASS
-- Audio enable/disable: PASS
-- Master-volume control: PASS
-- Missing-sound failure handling: PASS
-- Physical-media detection cue at 500 ms polling interval: PASS
-
-### Architecture Principle
-
-> **The Engine requests semantic audio events; themes define how those events sound.**
-
-The Terminal Shell should not depend on specific filenames or a specific host playback backend.
-
----
-
-# Previous Completed Milestone
-
-## v0.27 — Media Metadata & Collections
-
-### Status
-
-**COMPLETE — REAL HARDWARE VALIDATED**
-
-### Goal
-
-Introduce a standard J-29 physical-media format in which the physical object represents software regardless of where the software payload actually resides.
-
-### Completed
-
-- Standard `j29-media.ini` descriptor
-- `type=GAME` self-contained media using explicit ROM paths
-- Metadata-only launch keys using stable J-29 `game_id` values
-- Steam launch keys through existing `STEAM_<appid>` records
-- `type=COLLECTION` multi-program media
-- Collection browser with repeated launches while media remains open
-- Dynamic `PHYSICAL MEDIA` main-menu entry while recognized media is mounted
-- Reopen currently mounted media without reinsertion
-- Boot-time recognition of already-inserted J-29 media
-- Safe invalid-ID handling
-- Safe hot-removal handling
-- Fresh detection after reinsertion
-
-### Architecture Principle
-
-> **J-29 physical media represents software. It does not require the software to physically reside on that media.**
-
-A floppy disk, SD card, USB device, or other supported medium can behave as a physical software object even when the actual program is stored on local storage or managed by another launcher.
-
----
-
-# v0.30 — OLED / Auxiliary Display Support
-
-### Goal
-
-Allow compatible secondary displays to show useful J-29 status information without tying the Engine to one specific hardware module.
-
-Example states:
-
-```text
-J-29
-READY
-```
-
-```text
-DOOM
-RUNNING
-```
-
-```text
-MEDIA
-DETECTED
-```
-
-### Planned Work
-
-- Add an Engine-level auxiliary-display service
-- Define semantic display states rather than hard-coded device strings
-- Keep display hardware behind a dedicated adapter/backend layer
-- Support safe failure when no auxiliary display is connected
-- Allow the Terminal Shell to publish useful status events
-- Avoid making the main application depend on auxiliary hardware
-- Determine the initial reference display hardware during implementation
-- Validate behavior with the display connected and disconnected
-
-### Architecture Principle
-
-> **The Engine publishes status. Hardware adapters decide how to display it.**
-
-Auxiliary display support must remain optional.
-
----
-
-# v0.31 — Guided First-Launch Setup
+**NEXT MILESTONE**
 
 ### Goal
 
@@ -270,9 +133,10 @@ Planned steps include:
 - Basic application configuration
 - Machine identity
 - Game-library locations
-- Steam discovery
+- Steam discovery and sign-in/install guidance where needed
+- GOG / Epic and other launcher integration guidance where supported
 - ROM-library locations
-- Emulator configuration
+- Emulator configuration and optional emulator acquisition guidance
 - Theme / appearance basics
 - Audio enable/disable
 - Master volume
@@ -304,13 +168,9 @@ Required guidance includes:
 - Explain host changes before applying them
 - Provide a physical-media verification step afterward
 
-The purpose is to prevent Windows popups or host sound effects from competing with the J-29 interface while preserving normal device mounting.
-
 ### Final Verification
 
-Before the guided setup is considered complete, the user should be able to verify core configuration.
-
-The verification flow should cover the systems that are available on the host, including:
+Before guided setup is considered complete, the user should be able to verify the systems available on the host, including:
 
 - Library discovery
 - Steam detection
@@ -325,84 +185,13 @@ Failures should return the user to the relevant setup step instead of leaving th
 
 > **Beginner users should be guided. Power users should never be trapped by the wizard.**
 
-The goal is to make a fresh installation approachable without reducing configurability for experienced users.
-
----
-
-# v0.32 — Maintenance Terminal
-
-### Goal
-
-Replace temporary development shortcuts with an in-universe maintenance environment.
-
-Normal access:
-
-```text
-CTRL + ALT + F12
-```
-
-Example:
-
-```text
-====================================
-
-CALLISTO COMPUTER SYSTEMS
-MAINTENANCE TERMINAL
-
-====================================
-
-AUTHORIZED PERSONNEL ONLY
-
-PASSWORD REQUIRED
-
->
-```
-
-Successful authorization:
-
-```text
-ACCESS GRANTED
-
-OPENING MAINTENANCE ENVIRONMENT...
-```
-
-Failed authorization may display:
-
-```text
-ACCESS DENIED
-
-USER NOT RECOGNIZED
-```
-
-### Planned Capabilities
-
-The Maintenance Terminal should provide controlled access to functions that do not belong in normal appliance operation.
-
-Planned capabilities may include:
-
-- Exit to Desktop Mode
-- Advanced Terminal Mode
-- Configuration access
-- Diagnostics
-- Media tools
-- Application restart
-- Controlled shutdown
-- Controlled reboot
-
-### Security
-
-- The maintenance password must not be stored as plain text
-- Authentication failures must fail safely
-- Maintenance access must remain separate from normal user navigation
-- Development shortcuts should be removed or restricted once equivalent maintenance functions exist
-
-### Design Principle
-
-> **Normal operation stays immersive. Maintenance stays available.**
-
 ---
 
 # v0.33 — Appliance Mode
+
+### Status
+
+**PLANNED**
 
 ### Goal
 
@@ -819,11 +608,6 @@ New ideas should generally be recorded for post-v1.0 development instead of bein
 - Accessibility
 - Compatibility
 - Completion of an already-approved v1.0 feature
-
-The priority is now:
-
-> **Build the roadmap. Test the roadmap. Finish the roadmap. Ship v1.0.**
-New ideas should generally be recorded for post-v1.0 development instead of being added to the initial release unless they are required for reliability, architecture, security, or completion of an existing milestone.
 
 The priority is now:
 
