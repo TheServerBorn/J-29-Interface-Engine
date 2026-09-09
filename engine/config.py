@@ -145,3 +145,118 @@ def load_settings(config_path="config/settings.ini"):
             fallback="F12"
         ),
     }
+
+
+MAINTENANCE_SETTING_MAP = {
+    "fullscreen": ("INTERFACE", "fullscreen", "bool"),
+    "theme": ("INTERFACE", "theme", "str"),
+    "show_footer": ("INTERFACE", "show_footer", "bool"),
+    "aux_display_enabled": ("AUXILIARY_DISPLAY", "enabled", "bool"),
+    "aux_display_adapter": ("AUXILIARY_DISPLAY", "adapter", "adapter"),
+    "aux_display_width": ("AUXILIARY_DISPLAY", "width", "width"),
+}
+
+
+def list_available_themes(themes_root="themes"):
+    root = Path(themes_root)
+    if not root.exists():
+        return []
+
+    themes = []
+    for child in root.iterdir():
+        if child.is_dir() and (child / "theme.ini").exists():
+            themes.append(child.name)
+
+    return sorted(themes, key=str.casefold)
+
+
+def _normalize_maintenance_setting(name, value, themes_root="themes"):
+    if name not in MAINTENANCE_SETTING_MAP:
+        raise ValueError(f"Unsupported maintenance setting: {name}")
+
+    _section, _key, kind = MAINTENANCE_SETTING_MAP[name]
+
+    if kind == "bool":
+        return bool(value)
+
+    if kind == "str":
+        value = str(value or "").strip()
+        if not value:
+            raise ValueError(f"{name} cannot be empty.")
+
+        if name == "theme":
+            available = list_available_themes(themes_root)
+            # If themes are available, require an exact existing theme.
+            if available and value not in available:
+                raise ValueError(f"Unknown theme: {value}")
+
+        return value
+
+    if kind == "adapter":
+        value = str(value or "").strip().lower()
+        if value not in ("debug", "serial"):
+            raise ValueError("Aux adapter must be debug or serial.")
+        return value
+
+    if kind == "width":
+        value = int(value)
+        if value < 8 or value > 64:
+            raise ValueError("Aux display width must be between 8 and 64.")
+        return value
+
+    raise ValueError(f"Unsupported setting type: {kind}")
+
+
+def save_maintenance_settings(
+    values,
+    config_path="config/settings.ini",
+    themes_root="themes",
+):
+    """
+    Atomically save the maintenance editor's low-risk allowlisted settings.
+
+    Existing unrelated settings/sections are preserved. If validation or the
+    write fails, the original settings.ini remains untouched.
+    """
+    if not isinstance(values, dict):
+        raise ValueError("Settings payload must be a dictionary.")
+
+    normalized = {}
+    for name, value in values.items():
+        normalized[name] = _normalize_maintenance_setting(
+            name,
+            value,
+            themes_root=themes_root,
+        )
+
+    ensure_config_file(config_path)
+    path = Path(config_path)
+
+    config = configparser.ConfigParser()
+    config.read(path, encoding="utf-8")
+
+    for name, value in normalized.items():
+        section, key, kind = MAINTENANCE_SETTING_MAP[name]
+        if not config.has_section(section):
+            config.add_section(section)
+
+        if kind == "bool":
+            serialized = "true" if value else "false"
+        else:
+            serialized = str(value)
+
+        config.set(section, key, serialized)
+
+    temp_path = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with temp_path.open("w", encoding="utf-8") as handle:
+            config.write(handle)
+        temp_path.replace(path)
+    except Exception:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise
+
+    return normalized

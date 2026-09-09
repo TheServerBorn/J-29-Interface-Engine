@@ -126,6 +126,14 @@ def set_menu(text):
         text=text
     )
 
+def set_menu_top(y=165):
+    """Set the vertical start position for the current screen's menu/body."""
+    scanline_canvas.coords(
+        canvas_menu,
+        60,
+        y
+    )
+
 def get_prompt_y():
     menu_box = scanline_canvas.bbox(canvas_menu)
 
@@ -433,8 +441,11 @@ def update_footer():
     elif current_screen == "maintenance_menu":
         set_footer("↑↓ MOVE   ENTER SELECT")
 
-    elif current_screen in ("maintenance_diagnostics", "maintenance_settings"):
+    elif current_screen == "maintenance_diagnostics":
         set_footer("ESC BACK")
+
+    elif current_screen == "maintenance_settings":
+        set_footer("↑↓ SELECT   ←→ CHANGE   A APPLY   ESC CANCEL")
 
     elif current_screen == "maintenance_desktop_confirm":
         set_footer("Y CONTINUE   N/ESC CANCEL")
@@ -531,7 +542,7 @@ def clear_current_screen():
         show_maintenance_diagnostics()
 
     elif current_screen == "maintenance_settings":
-        show_maintenance_settings()
+        draw_maintenance_settings()
 
     elif current_screen == "maintenance_desktop_confirm":
         show_desktop_mode_confirm()
@@ -612,6 +623,7 @@ def show_maintenance_auth():
         "        CALLISTO COMPUTER SYSTEMS\n"
         "========================================"
     )
+    set_menu_top(165)
     draw_maintenance_auth()
 
 
@@ -696,6 +708,7 @@ def show_maintenance_menu(reset_selection=True):
         "         MAINTENANCE TERMINAL\n"
         "========================================"
     )
+    set_menu_top(205)
     draw_maintenance_menu()
     scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
 
@@ -738,6 +751,7 @@ def show_maintenance_diagnostics():
         "          SYSTEM DIAGNOSTICS\n"
         "========================================"
     )
+    set_menu_top(165)
     set_menu(
         "AUTHENTICATION ... VERIFIED\n"
         "TERMINAL ......... ONLINE\n"
@@ -751,29 +765,216 @@ def show_maintenance_diagnostics():
     update_footer()
 
 
-def show_maintenance_settings():
-    global current_screen
+def get_maintenance_setting_rows():
+    return [
+        ("FULLSCREEN DEFAULT", "fullscreen"),
+        ("THEME", "theme"),
+        ("SHOW FOOTER", "show_footer"),
+        ("AUX DISPLAY", "aux_display_enabled"),
+        ("AUX ADAPTER", "aux_display_adapter"),
+        ("AUX WIDTH", "aux_display_width"),
+    ]
+
+
+def _maintenance_setting_value_text(key, value):
+    if key in ("fullscreen", "show_footer", "aux_display_enabled"):
+        return "ON" if bool(value) else "OFF"
+
+    if key == "aux_display_adapter":
+        return str(value or "debug").upper()
+
+    return str(value).upper()
+
+
+def _cycle_maintenance_setting(key, direction):
+    global maintenance_settings_draft, maintenance_settings_message
+
+    maintenance_settings_message = ""
+
+    if key in ("fullscreen", "show_footer", "aux_display_enabled"):
+        maintenance_settings_draft[key] = not bool(
+            maintenance_settings_draft.get(key)
+        )
+        return
+
+    if key == "theme":
+        themes = engine.get_available_themes()
+        if not themes:
+            maintenance_settings_message = "NO INSTALLED THEMES FOUND"
+            return
+
+        current = str(maintenance_settings_draft.get("theme") or "")
+        try:
+            index = themes.index(current)
+        except ValueError:
+            index = 0
+
+        maintenance_settings_draft["theme"] = themes[
+            (index + direction) % len(themes)
+        ]
+        return
+
+    if key == "aux_display_adapter":
+        adapters = ["debug", "serial"]
+        current = str(
+            maintenance_settings_draft.get("aux_display_adapter") or "debug"
+        ).lower()
+        try:
+            index = adapters.index(current)
+        except ValueError:
+            index = 0
+
+        maintenance_settings_draft["aux_display_adapter"] = adapters[
+            (index + direction) % len(adapters)
+        ]
+        return
+
+    if key == "aux_display_width":
+        widths = [8, 12, 16, 20, 24, 32, 40, 64]
+        current = int(maintenance_settings_draft.get("aux_display_width", 16))
+        nearest = min(
+            range(len(widths)),
+            key=lambda idx: abs(widths[idx] - current),
+        )
+        maintenance_settings_draft["aux_display_width"] = widths[
+            (nearest + direction) % len(widths)
+        ]
+
+
+def show_maintenance_settings(reset_selection=True):
+    global current_screen, selected_maintenance_setting
+    global maintenance_settings_draft, maintenance_settings_original
+    global maintenance_settings_message
 
     current_screen = "maintenance_settings"
-    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
 
-    current_settings = engine.get_settings()
+    if reset_selection or not maintenance_settings_draft:
+        current = engine.get_settings()
+        editable_keys = [
+            key for _label, key in get_maintenance_setting_rows()
+        ]
+        maintenance_settings_original = {
+            key: current.get(key)
+            for key in editable_keys
+        }
+        maintenance_settings_draft = dict(maintenance_settings_original)
+        maintenance_settings_message = ""
+
+    if reset_selection:
+        selected_maintenance_setting = 0
+
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
 
     set_title(
         "========================================\n"
         "          TERMINAL SETTINGS\n"
         "========================================"
     )
-    set_menu(
-        f"FULLSCREEN ....... {str(bool(current_settings.get('fullscreen'))).upper()}\n"
-        f"THEME ............ {str(current_settings.get('theme', 'UNKNOWN')).upper()}\n"
-        f"SHOW FOOTER ...... {str(bool(current_settings.get('show_footer'))).upper()}\n"
-        f"AUX DISPLAY ...... {str(bool(current_settings.get('aux_display_enabled'))).upper()}\n"
-        f"AUX ADAPTER ...... {str(current_settings.get('aux_display_adapter', 'NONE')).upper()}\n\n"
-        "VIEW ONLY IN v0.31.1\n"
-        "EDITING WILL BE ADDED IN A LATER CHECKPOINT."
-    )
+    set_menu_top(165)
+    draw_maintenance_settings()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_maintenance_settings():
+    rows = get_maintenance_setting_rows()
+    lines = []
+
+    for index, (label, key) in enumerate(rows):
+        marker = "> " if index == selected_maintenance_setting else "  "
+        value = maintenance_settings_draft.get(key)
+        shown = _maintenance_setting_value_text(key, value)
+        lines.append(f"{marker}{label:<20} {shown}")
+
+    lines.extend([
+        "",
+        "LEFT/RIGHT CHANGE   A APPLY",
+        "ESC CANCEL",
+    ])
+
+    if maintenance_settings_message:
+        lines.extend(["", maintenance_settings_message])
+
+    set_menu("\n".join(lines))
     update_footer()
+
+
+def apply_maintenance_settings():
+    global settings, maintenance_settings_original
+    global maintenance_settings_draft, maintenance_settings_message
+
+    before = dict(maintenance_settings_original)
+    proposed = dict(maintenance_settings_draft)
+
+    try:
+        saved = engine.save_maintenance_settings(proposed)
+
+        # Refresh the UI's cached settings dictionary without replacing the
+        # object, so existing code that references it continues to see updates.
+        refreshed = engine.get_settings()
+        settings.clear()
+        settings.update(refreshed)
+
+        # Footer is safe to apply immediately.
+        update_footer()
+
+        # Aux settings can reload live and fail safely by design.
+        aux_changed = any(
+            before.get(key) != saved.get(key)
+            for key in (
+                "aux_display_enabled",
+                "aux_display_adapter",
+                "aux_display_width",
+            )
+        )
+        if aux_changed:
+            engine.reload_aux_display()
+            engine.set_aux_display(
+                "MAINTENANCE",
+                "J-29",
+                "MAINTENANCE",
+            )
+
+        restart_required = any(
+            before.get(key) != saved.get(key)
+            for key in ("theme", "fullscreen")
+        )
+
+        maintenance_settings_original = dict(saved)
+        maintenance_settings_draft = dict(saved)
+
+        if restart_required:
+            maintenance_settings_message = (
+                "SAVED — RESTART J-29 FOR THEME/FULLSCREEN"
+            )
+        else:
+            maintenance_settings_message = "SETTINGS SAVED"
+
+        engine.play_sound("access_granted")
+
+    except Exception as exc:
+        # save_maintenance_settings() is atomic; reload the original on-disk
+        # values to ensure our draft returns to a known-good state.
+        current = engine.get_settings()
+        maintenance_settings_draft = {
+            key: current.get(key)
+            for _label, key in get_maintenance_setting_rows()
+        }
+        maintenance_settings_original = dict(maintenance_settings_draft)
+        maintenance_settings_message = f"SAVE FAILED: {exc}"
+        engine.play_sound("error")
+
+    draw_maintenance_settings()
+
+
+def cancel_maintenance_settings():
+    global maintenance_settings_draft, maintenance_settings_original
+    global maintenance_settings_message
+
+    maintenance_settings_draft = {}
+    maintenance_settings_original = {}
+    maintenance_settings_message = ""
+    show_maintenance_menu(reset_selection=False)
+
 
 
 def show_desktop_mode_confirm():
@@ -787,6 +988,7 @@ def show_desktop_mode_confirm():
         "           DESKTOP MODE\n"
         "========================================"
     )
+    set_menu_top(165)
     set_menu(
         "WARNING\n\n"
         "DESKTOP MODE WILL EXPOSE THE HOST\n"
@@ -818,6 +1020,7 @@ def enter_desktop_mode():
         "           DESKTOP MODE ACTIVE\n"
         "========================================"
     )
+    set_menu_top(165)
     set_menu(
         "HOST DESKTOP ACCESS ENABLED\n\n"
         "J-29 REMAINS RUNNING IN THIS WINDOW.\n\n"
@@ -2301,8 +2504,12 @@ selected_media_item = 0
 selected_media_tool = 0
 selected_aux_option = 0
 selected_maintenance_option = 0
+selected_maintenance_setting = 0
 maintenance_password_buffer = ""
 maintenance_message = ""
+maintenance_settings_draft = {}
+maintenance_settings_original = {}
+maintenance_settings_message = ""
 selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
@@ -2403,6 +2610,7 @@ def show_main_menu():
         f" {identity['os_name'].upper()} v{identity['version']}\n"
         "===================================="
     )
+    set_menu_top(165)
 
     set_footer("↑↓ MOVE   ENTER SELECT")
 
@@ -2972,7 +3180,7 @@ def key_pressed(event):
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
     global selected_aux_option
-    global selected_maintenance_option
+    global selected_maintenance_option, selected_maintenance_setting
     global maintenance_password_buffer, maintenance_message
     global selected_creator_group
     global selected_creator_collection_game, selected_creator_collection_order
@@ -3028,7 +3236,7 @@ def key_pressed(event):
             elif action == "diagnostics":
                 show_maintenance_diagnostics()
             elif action == "settings":
-                show_maintenance_settings()
+                show_maintenance_settings(reset_selection=True)
             elif action == "return":
                 return_from_maintenance()
 
@@ -3036,9 +3244,41 @@ def key_pressed(event):
         # explicit RETURN TO TERMINAL action after authentication.
         return
 
-    if current_screen in ("maintenance_diagnostics", "maintenance_settings"):
+    if current_screen == "maintenance_diagnostics":
         if event.keysym == "Escape":
             show_maintenance_menu(reset_selection=False)
+        return
+
+    if current_screen == "maintenance_settings":
+        rows = get_maintenance_setting_rows()
+
+        if event.keysym == "Up":
+            selected_maintenance_setting = (
+                selected_maintenance_setting - 1
+            ) % len(rows)
+            engine.play_sound("menu_move")
+            draw_maintenance_settings()
+
+        elif event.keysym == "Down":
+            selected_maintenance_setting = (
+                selected_maintenance_setting + 1
+            ) % len(rows)
+            engine.play_sound("menu_move")
+            draw_maintenance_settings()
+
+        elif event.keysym in ("Left", "Right"):
+            direction = -1 if event.keysym == "Left" else 1
+            key = rows[selected_maintenance_setting][1]
+            _cycle_maintenance_setting(key, direction)
+            engine.play_sound("menu_move")
+            draw_maintenance_settings()
+
+        elif event.keysym.lower() == "a":
+            apply_maintenance_settings()
+
+        elif event.keysym == "Escape":
+            cancel_maintenance_settings()
+
         return
 
     if current_screen == "maintenance_desktop_confirm":

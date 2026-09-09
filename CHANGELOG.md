@@ -1,3 +1,27 @@
+## v0.31.2 — Editable Maintenance Settings — TEST BUILD
+
+### Added
+- Authenticated low-risk Terminal Settings editor.
+- Staged changes with explicit APPLY.
+- Atomic settings.ini writes.
+- Validation and failure-safe rollback behavior.
+- Installed-theme discovery.
+- Live footer and auxiliary-display reconfiguration.
+
+### Editable
+- Fullscreen default
+- Theme
+- Footer visibility
+- Auxiliary display enabled
+- Auxiliary adapter
+- Auxiliary display width
+
+### Safety
+- Theme and fullscreen changes require restart.
+- No host-level or destructive settings are exposed.
+
+---
+
 ## v0.31.1 — Maintenance Menu Expansion — TEST BUILD
 
 ### Added

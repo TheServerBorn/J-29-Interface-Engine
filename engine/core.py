@@ -10,7 +10,12 @@ from engine.roms import discover_rom_games
 from engine.game_state import load_game_state, save_game_state
 from engine.launcher import launch_program_with_handle, launch_steam_app
 from engine.emulators import launch_rom_with_handle
-from engine.config import load_identity, load_settings
+from engine.config import (
+    load_identity,
+    load_settings,
+    list_available_themes,
+    save_maintenance_settings,
+)
 from engine.media import MediaMonitor, inspect_media
 from engine.maintenance_auth import is_configured, verify_password
 from engine.media_creator import (
@@ -329,6 +334,12 @@ class J29Engine:
 
     def get_settings(self):
         return load_settings()
+
+    def get_available_themes(self):
+        return list_available_themes()
+
+    def save_maintenance_settings(self, values):
+        return save_maintenance_settings(values)
 
     def get_theme(self):
         settings = load_settings()
