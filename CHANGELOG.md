@@ -1,3 +1,17 @@
+## v0.31.1 — Maintenance Menu Expansion — TEST BUILD
+
+### Added
+- Controlled Desktop Mode with second confirmation.
+- Read-only System Diagnostics screen.
+- Read-only Terminal Settings screen.
+- Explicit return from Desktop Mode to authenticated Maintenance Terminal.
+
+### Safety
+- Desktop Mode requires successful authentication and explicit confirmation.
+- No destructive or settings-changing actions are included.
+
+---
+
 ## v0.31.0 — Maintenance Entry & Authentication Foundation — TEST BUILD
 
 ### Added

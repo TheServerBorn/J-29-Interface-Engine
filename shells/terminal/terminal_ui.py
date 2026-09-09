@@ -33,6 +33,10 @@ def shutdown_terminal(event=None):
     root.after(220, root.destroy)
 
 def terminal_mode(event=None):
+    if globals().get("current_screen") == "maintenance_desktop":
+        leave_desktop_mode()
+        return
+
     engine.set_aux_display("READY", "J-29", "READY")
     root.attributes("-fullscreen", True)
     root.config(cursor="none")
@@ -429,8 +433,14 @@ def update_footer():
     elif current_screen == "maintenance_menu":
         set_footer("↑↓ MOVE   ENTER SELECT")
 
-    elif current_screen == "maintenance_status":
+    elif current_screen in ("maintenance_diagnostics", "maintenance_settings"):
         set_footer("ESC BACK")
+
+    elif current_screen == "maintenance_desktop_confirm":
+        set_footer("Y CONTINUE   N/ESC CANCEL")
+
+    elif current_screen == "maintenance_desktop":
+        set_footer("ENTER RETURN TO MAINTENANCE")
 
     elif current_screen == "media_prompt":
         set_footer("Y/ENTER OPEN   N/ESC IGNORE")
@@ -517,8 +527,14 @@ def clear_current_screen():
     elif current_screen == "maintenance_menu":
         draw_maintenance_menu()
 
-    elif current_screen == "maintenance_status":
-        draw_maintenance_status()
+    elif current_screen == "maintenance_diagnostics":
+        show_maintenance_diagnostics()
+
+    elif current_screen == "maintenance_settings":
+        show_maintenance_settings()
+
+    elif current_screen == "maintenance_desktop_confirm":
+        show_desktop_mode_confirm()
 
     elif current_screen == "help":
         show_command_help()
@@ -569,7 +585,9 @@ def clear_current_screen():
 
 def get_maintenance_options():
     return [
-        ("SYSTEM STATUS", "status"),
+        ("DESKTOP MODE", "desktop"),
+        ("SYSTEM DIAGNOSTICS", "diagnostics"),
+        ("TERMINAL SETTINGS", "settings"),
         ("RETURN TO TERMINAL", "return"),
     ]
 
@@ -697,10 +715,10 @@ def draw_maintenance_menu():
     update_footer()
 
 
-def show_maintenance_status():
+def show_maintenance_diagnostics():
     global current_screen
 
-    current_screen = "maintenance_status"
+    current_screen = "maintenance_diagnostics"
     scanline_canvas.itemconfig(canvas_cursor, state="hidden")
 
     try:
@@ -710,22 +728,115 @@ def show_maintenance_status():
             if aux.get("available")
             else "UNAVAILABLE"
         )
+        aux_adapter = str(aux.get("adapter") or "UNKNOWN").upper()
     except Exception:
         aux_status = "UNKNOWN"
+        aux_adapter = "UNKNOWN"
 
     set_title(
         "========================================\n"
-        "          MAINTENANCE STATUS\n"
+        "          SYSTEM DIAGNOSTICS\n"
         "========================================"
     )
     set_menu(
         "AUTHENTICATION ... VERIFIED\n"
+        "TERMINAL ......... ONLINE\n"
         f"AUX DISPLAY ...... {aux_status}\n"
-        "TERMINAL ......... ONLINE\n\n"
-        "NO SYSTEM-CHANGING TOOLS ARE ENABLED\n"
-        "IN THIS v0.31.0 CHECKPOINT."
+        f"AUX ADAPTER ...... {aux_adapter}\n"
+        f"GAMES LOADED ..... {len(games)}\n"
+        f"LIBRARIES ........ {len(library)}\n\n"
+        "READ-ONLY DIAGNOSTICS\n"
+        "NO SYSTEM CHANGES ARE PERFORMED."
     )
     update_footer()
+
+
+def show_maintenance_settings():
+    global current_screen
+
+    current_screen = "maintenance_settings"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+
+    current_settings = engine.get_settings()
+
+    set_title(
+        "========================================\n"
+        "          TERMINAL SETTINGS\n"
+        "========================================"
+    )
+    set_menu(
+        f"FULLSCREEN ....... {str(bool(current_settings.get('fullscreen'))).upper()}\n"
+        f"THEME ............ {str(current_settings.get('theme', 'UNKNOWN')).upper()}\n"
+        f"SHOW FOOTER ...... {str(bool(current_settings.get('show_footer'))).upper()}\n"
+        f"AUX DISPLAY ...... {str(bool(current_settings.get('aux_display_enabled'))).upper()}\n"
+        f"AUX ADAPTER ...... {str(current_settings.get('aux_display_adapter', 'NONE')).upper()}\n\n"
+        "VIEW ONLY IN v0.31.1\n"
+        "EDITING WILL BE ADDED IN A LATER CHECKPOINT."
+    )
+    update_footer()
+
+
+def show_desktop_mode_confirm():
+    global current_screen
+
+    current_screen = "maintenance_desktop_confirm"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+
+    set_title(
+        "========================================\n"
+        "           DESKTOP MODE\n"
+        "========================================"
+    )
+    set_menu(
+        "WARNING\n\n"
+        "DESKTOP MODE WILL EXPOSE THE HOST\n"
+        "OPERATING SYSTEM OUTSIDE J-29.\n\n"
+        "THIS ACTION REQUIRES AUTHENTICATED\n"
+        "MAINTENANCE ACCESS.\n\n"
+        "PRESS Y TO CONTINUE\n"
+        "PRESS N OR ESC TO CANCEL"
+    )
+    update_footer()
+
+
+def enter_desktop_mode():
+    global current_screen
+
+    current_screen = "maintenance_desktop"
+    root.attributes("-fullscreen", False)
+    root.config(cursor="")
+
+    engine.set_aux_display(
+        "MAINTENANCE",
+        "DESKTOP MODE",
+        "ACTIVE",
+    )
+
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "           DESKTOP MODE ACTIVE\n"
+        "========================================"
+    )
+    set_menu(
+        "HOST DESKTOP ACCESS ENABLED\n\n"
+        "J-29 REMAINS RUNNING IN THIS WINDOW.\n\n"
+        "PRESS ENTER TO RETURN TO THE\n"
+        "MAINTENANCE TERMINAL."
+    )
+    update_footer()
+
+
+def leave_desktop_mode():
+    root.attributes("-fullscreen", True)
+    root.config(cursor="none")
+    engine.set_aux_display(
+        "MAINTENANCE",
+        "J-29",
+        "MAINTENANCE",
+    )
+    show_maintenance_menu(reset_selection=False)
+
 
 
 def return_from_maintenance():
@@ -2912,8 +3023,12 @@ def key_pressed(event):
             engine.play_sound("select")
             action = options[selected_maintenance_option][1]
 
-            if action == "status":
-                show_maintenance_status()
+            if action == "desktop":
+                show_desktop_mode_confirm()
+            elif action == "diagnostics":
+                show_maintenance_diagnostics()
+            elif action == "settings":
+                show_maintenance_settings()
             elif action == "return":
                 return_from_maintenance()
 
@@ -2921,9 +3036,25 @@ def key_pressed(event):
         # explicit RETURN TO TERMINAL action after authentication.
         return
 
-    if current_screen == "maintenance_status":
+    if current_screen in ("maintenance_diagnostics", "maintenance_settings"):
         if event.keysym == "Escape":
             show_maintenance_menu(reset_selection=False)
+        return
+
+    if current_screen == "maintenance_desktop_confirm":
+        key = event.keysym.lower()
+
+        if key == "y":
+            engine.play_sound("access_granted")
+            enter_desktop_mode()
+        elif key in ("n", "escape"):
+            show_maintenance_menu(reset_selection=False)
+
+        return
+
+    if current_screen == "maintenance_desktop":
+        if event.keysym == "Return":
+            leave_desktop_mode()
         return
 
     if (
