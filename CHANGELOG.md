@@ -1,3 +1,19 @@
+## v0.30.3 — Physical Display Adapter / Hardware Prep — TEST BUILD
+
+### Added
+- Physical-display adapter connection/status contract.
+- USB/serial display transport.
+- Automatic reconnect attempts.
+- Graceful missing/disconnected hardware behavior.
+- Engine-visible auxiliary display connection/error status.
+- Serial port, baud-rate, and reconnect settings.
+
+### Protocol
+- Serial adapters receive already-formatted packets as:
+  `J29|STATE|LINE1|LINE2`
+
+---
+
 ## v0.30.2 — Auxiliary Display Presentation Model — TEST BUILD
 
 ### Added

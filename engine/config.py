@@ -119,6 +119,21 @@ def load_settings(config_path="config/settings.ini"):
             "width",
             fallback=16
         ),
+        "aux_display_serial_port": config.get(
+            "AUXILIARY_DISPLAY",
+            "serial_port",
+            fallback=""
+        ),
+        "aux_display_serial_baudrate": config.getint(
+            "AUXILIARY_DISPLAY",
+            "serial_baudrate",
+            fallback=115200
+        ),
+        "aux_display_reconnect_seconds": config.getfloat(
+            "AUXILIARY_DISPLAY",
+            "reconnect_seconds",
+            fallback=2.0
+        ),
         "fullscreen_key": config.get(
             "DEVELOPMENT",
             "fullscreen_key",

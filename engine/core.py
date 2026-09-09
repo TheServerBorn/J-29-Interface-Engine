@@ -77,6 +77,9 @@ class J29Engine:
     def get_aux_display_state(self):
         return self._aux_display.get_last_message()
 
+    def get_aux_display_status(self):
+        return self._aux_display.get_adapter_status()
+
     def reload_aux_display(self):
         self._aux_display.configure(load_settings())
 
