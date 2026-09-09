@@ -18,6 +18,7 @@ from engine.config import (
 )
 from engine.media import MediaMonitor, inspect_media
 from engine.maintenance_auth import is_configured, verify_password
+from engine.system_actions import restart_application, request_host_action
 from engine.media_creator import (
     eligible_launch_key_games,
     preview_launch_key,
@@ -107,6 +108,16 @@ class J29Engine:
 
     def verify_maintenance_password(self, password):
         return verify_password(password)
+
+
+    def restart_j29(self):
+        return restart_application()
+
+    def request_host_reboot(self):
+        return request_host_action("reboot")
+
+    def request_host_shutdown(self):
+        return request_host_action("shutdown")
 
 
     def get_games(self):

@@ -456,6 +456,13 @@ def update_footer():
     elif current_screen == "maintenance_desktop":
         set_footer("ENTER RETURN TO MAINTENANCE")
 
+
+    elif current_screen == "maintenance_advanced":
+        set_footer("TYPE COMMAND   ENTER RUN   ESC BACK")
+
+    elif current_screen == "maintenance_action_confirm":
+        set_footer("Y CONFIRM   N/ESC CANCEL")
+
     elif current_screen == "media_prompt":
         set_footer("Y/ENTER OPEN   N/ESC IGNORE")
 
@@ -553,6 +560,13 @@ def clear_current_screen():
     elif current_screen == "maintenance_desktop_confirm":
         show_desktop_mode_confirm()
 
+
+    elif current_screen == "maintenance_advanced":
+        draw_advanced_terminal()
+
+    elif current_screen == "maintenance_action_confirm":
+        show_maintenance_action_confirm(maintenance_pending_action)
+
     elif current_screen == "help":
         show_command_help()
 
@@ -603,8 +617,14 @@ def clear_current_screen():
 def get_maintenance_options():
     return [
         ("DESKTOP MODE", "desktop"),
+        ("ADVANCED TERMINAL", "advanced"),
         ("SYSTEM DIAGNOSTICS", "diagnostics"),
         ("TERMINAL SETTINGS", "settings"),
+        ("MEDIA TOOLS", "media_tools"),
+        ("REBOOT TERMINAL", "reboot_terminal"),
+        ("RESTART J-29", "restart_j29"),
+        ("REBOOT SYSTEM", "reboot_system"),
+        ("SHUTDOWN SYSTEM", "shutdown_system"),
         ("RETURN TO TERMINAL", "return"),
     ]
 
@@ -732,6 +752,199 @@ def draw_maintenance_menu():
 
     set_menu("\n".join(lines))
     update_footer()
+
+
+def show_advanced_terminal(reset=True):
+    global current_screen, maintenance_advanced_buffer
+    global maintenance_advanced_output
+
+    current_screen = "maintenance_advanced"
+
+    if reset:
+        maintenance_advanced_buffer = ""
+        maintenance_advanced_output = [
+            "CALLISTO ADVANCED MAINTENANCE TERMINAL",
+            "TYPE HELP FOR AVAILABLE COMMANDS",
+        ]
+
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+    set_title(
+        "========================================\n"
+        "       ADVANCED MAINTENANCE TERMINAL\n"
+        "========================================"
+    )
+    set_menu_top(165)
+    draw_advanced_terminal()
+
+
+def draw_advanced_terminal():
+    visible = maintenance_advanced_output[-9:]
+    prompt = "> " + maintenance_advanced_buffer
+    set_menu("\n".join(visible + ["", prompt]))
+    update_footer()
+
+
+def _advanced_write(*lines):
+    maintenance_advanced_output.extend(str(line) for line in lines)
+    draw_advanced_terminal()
+
+
+def execute_advanced_command():
+    global maintenance_advanced_buffer
+
+    command = maintenance_advanced_buffer.strip().upper()
+    maintenance_advanced_buffer = ""
+
+    if not command:
+        draw_advanced_terminal()
+        return
+
+    maintenance_advanced_output.append("> " + command)
+
+    if command == "HELP":
+        _advanced_write(
+            "HELP",
+            "STATUS",
+            "SETTINGS",
+            "MEDIA",
+            "DESKTOP",
+            "REBOOT",
+            "RESTART",
+            "SYSTEM REBOOT",
+            "SYSTEM SHUTDOWN",
+            "RETURN",
+            "CLEAR",
+        )
+
+    elif command == "STATUS":
+        show_maintenance_diagnostics()
+
+    elif command == "SETTINGS":
+        show_maintenance_settings(reset_selection=True)
+
+    elif command == "MEDIA":
+        remember_current_screen()
+        show_media_tools()
+
+    elif command == "DESKTOP":
+        show_desktop_mode_confirm()
+
+    elif command == "REBOOT":
+        reboot_terminal()
+
+    elif command == "RESTART":
+        show_maintenance_action_confirm("restart_j29")
+
+    elif command == "SYSTEM REBOOT":
+        show_maintenance_action_confirm("reboot_system")
+
+    elif command == "SYSTEM SHUTDOWN":
+        show_maintenance_action_confirm("shutdown_system")
+
+    elif command in ("RETURN", "EXIT"):
+        return_from_maintenance()
+
+    elif command == "CLEAR":
+        maintenance_advanced_output.clear()
+        draw_advanced_terminal()
+
+    else:
+        engine.play_sound("error")
+        _advanced_write("UNKNOWN MAINTENANCE COMMAND")
+
+
+def show_maintenance_action_confirm(action):
+    global current_screen, maintenance_pending_action
+
+    maintenance_pending_action = action
+    current_screen = "maintenance_action_confirm"
+    scanline_canvas.itemconfig(canvas_cursor, state="hidden")
+
+    labels = {
+        "restart_j29": (
+            "RESTART J-29",
+            "THIS WILL TERMINATE AND RELAUNCH J-29.\n"
+            "SAVED STARTUP SETTINGS WILL BE RELOADED.",
+        ),
+        "reboot_system": (
+            "REBOOT SYSTEM",
+            "WARNING: THE HOST OPERATING SYSTEM\n"
+            "WILL REBOOT IMMEDIATELY.",
+        ),
+        "shutdown_system": (
+            "SHUTDOWN SYSTEM",
+            "WARNING: THE HOST OPERATING SYSTEM\n"
+            "WILL SHUT DOWN IMMEDIATELY.",
+        ),
+    }
+
+    title, detail = labels.get(
+        action,
+        ("MAINTENANCE ACTION", "UNKNOWN ACTION"),
+    )
+
+    set_title(
+        "========================================\n"
+        f"          {title}\n"
+        "========================================"
+    )
+    set_menu_top(165)
+    set_menu(
+        detail
+        + "\n\n"
+        "PRESS Y TO CONFIRM\n"
+        "PRESS N OR ESC TO CANCEL"
+    )
+    update_footer()
+
+
+def cancel_maintenance_action():
+    global maintenance_pending_action
+    maintenance_pending_action = ""
+    show_maintenance_menu(reset_selection=False)
+
+
+def perform_maintenance_action():
+    global maintenance_pending_action
+
+    action = maintenance_pending_action
+    maintenance_pending_action = ""
+
+    if action == "restart_j29":
+        engine.set_aux_display("REBOOTING", "J-29", "RESTARTING")
+        set_menu("RESTARTING J-29...")
+        set_footer("")
+        root.update_idletasks()
+        root.after(150, engine.restart_j29)
+        return
+
+    try:
+        if action == "reboot_system":
+            engine.set_aux_display("REBOOTING", "SYSTEM", "REBOOTING")
+            set_menu("HOST SYSTEM REBOOT REQUESTED...")
+            set_footer("")
+            root.update_idletasks()
+            engine.request_host_reboot()
+            return
+
+        if action == "shutdown_system":
+            engine.set_aux_display("SHUTDOWN", "SYSTEM", "SHUTDOWN")
+            set_menu("HOST SYSTEM SHUTDOWN REQUESTED...")
+            set_footer("")
+            root.update_idletasks()
+            engine.request_host_shutdown()
+            return
+
+    except Exception as exc:
+        engine.play_sound("error")
+        show_maintenance_menu(reset_selection=False)
+        show_temporary_status(
+            f"SYSTEM ACTION FAILED: {exc}",
+            duration=3500,
+        )
+        return
+
+    show_maintenance_menu(reset_selection=False)
 
 
 def show_maintenance_diagnostics():
@@ -950,7 +1163,7 @@ def apply_maintenance_settings():
 
         if restart_required:
             maintenance_settings_message = (
-                "SAVED — RESTART J-29 FOR THEME/FULLSCREEN"
+                "SAVED — RESTART J-29 TO APPLY"
             )
         else:
             maintenance_settings_message = "SETTINGS SAVED"
@@ -2558,6 +2771,9 @@ maintenance_message = ""
 maintenance_settings_draft = {}
 maintenance_settings_original = {}
 maintenance_settings_message = ""
+maintenance_advanced_buffer = ""
+maintenance_advanced_output = []
+maintenance_pending_action = ""
 selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
@@ -2633,6 +2849,9 @@ def go_back():
 
     elif previous == "settings_menu":
         show_settings_menu(reset_selection=False)
+
+    elif previous == "maintenance_advanced":
+        show_advanced_terminal(reset=False)
 
     elif previous == "help":
         show_command_help()
@@ -3230,6 +3449,7 @@ def key_pressed(event):
     global selected_aux_option, selected_settings_option
     global selected_maintenance_option, selected_maintenance_setting
     global maintenance_password_buffer, maintenance_message
+    global maintenance_advanced_buffer, maintenance_pending_action
     global selected_creator_group
     global selected_creator_collection_game, selected_creator_collection_order
     global creator_collection_title
@@ -3281,10 +3501,23 @@ def key_pressed(event):
 
             if action == "desktop":
                 show_desktop_mode_confirm()
+            elif action == "advanced":
+                show_advanced_terminal()
             elif action == "diagnostics":
                 show_maintenance_diagnostics()
             elif action == "settings":
                 show_maintenance_settings(reset_selection=True)
+            elif action == "media_tools":
+                remember_current_screen()
+                show_media_tools()
+            elif action == "reboot_terminal":
+                reboot_terminal()
+            elif action == "restart_j29":
+                show_maintenance_action_confirm("restart_j29")
+            elif action == "reboot_system":
+                show_maintenance_action_confirm("reboot_system")
+            elif action == "shutdown_system":
+                show_maintenance_action_confirm("shutdown_system")
             elif action == "return":
                 return_from_maintenance()
 
@@ -3326,6 +3559,40 @@ def key_pressed(event):
 
         elif event.keysym == "Escape":
             cancel_maintenance_settings()
+
+        return
+
+    if current_screen == "maintenance_advanced":
+        key = event.keysym
+
+        if key == "Escape":
+            show_maintenance_menu(reset_selection=False)
+
+        elif key == "Return":
+            execute_advanced_command()
+
+        elif key == "BackSpace":
+            maintenance_advanced_buffer = maintenance_advanced_buffer[:-1]
+            draw_advanced_terminal()
+
+        elif (
+            event.char
+            and event.char.isprintable()
+            and len(maintenance_advanced_buffer) < 80
+        ):
+            maintenance_advanced_buffer += event.char.upper()
+            draw_advanced_terminal()
+
+        return
+
+    if current_screen == "maintenance_action_confirm":
+        key = event.keysym.lower()
+
+        if key == "y":
+            engine.play_sound("access_granted")
+            perform_maintenance_action()
+        elif key in ("n", "escape"):
+            cancel_maintenance_action()
 
         return
 

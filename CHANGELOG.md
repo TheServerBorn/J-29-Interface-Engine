@@ -1,3 +1,19 @@
+## v0.31.4 — Maintenance Terminal Completion — TEST BUILD
+
+### Added
+- Authenticated Advanced Maintenance Terminal command console.
+- True process-level RESTART J-29 action.
+- Maintenance-menu Media Tools access.
+- Explicit REBOOT TERMINAL action.
+- Confirmed host REBOOT SYSTEM and SHUTDOWN SYSTEM actions.
+- Secondary confirmation screen for process/host actions.
+
+### Changed
+- Theme/fullscreen save message now explicitly says RESTART J-29 TO APPLY.
+- REBOOT TERMINAL and RESTART J-29 are now separate concepts.
+
+---
+
 ## v0.31.3 — Main Menu & Settings Consolidation — TEST BUILD
 
 ### Changed
