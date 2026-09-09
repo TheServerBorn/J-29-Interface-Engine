@@ -1,4 +1,4 @@
-# J-29 Interface Engine
+# Veyllisto Interface Engine
 
 > **Modern hardware. Retro experience.**
 
@@ -13,7 +13,7 @@ A modular retro-computing interface engine for games, physical media, fictional 
 **Primary release target:** Windows  
 **License:** MIT
 
-J-29 began as a custom retro-terminal launcher for the **Callisto J-29 computer project**.
+Veyllisto began as a custom retro-terminal launcher for the **Callisto J-29 computer project**.
 
 It has since evolved into a modular interface engine designed to support:
 
@@ -33,20 +33,20 @@ The original **J-29 Terminal** remains the official reference implementation.
 
 ---
 
-# What Is J-29?
+# What Is Veyllisto?
 
-J-29 is not intended to be another conventional game launcher.
+Veyllisto is not intended to be another conventional game launcher.
 
 It is an attempt to make modern hardware feel like a **dedicated fictional computer system** again.
 
-Instead of exposing separate launchers, emulator directories, ROM folders, removable drives, and desktop shortcuts directly to the user, J-29 places them behind a unified interface.
+Instead of exposing separate launchers, emulator directories, ROM folders, removable drives, and desktop shortcuts directly to the user, Veyllisto places them behind a unified interface.
 
 The current Terminal Shell presents that system as a retro-futuristic computer terminal.
 
 Future shells can present the same underlying Engine in completely different ways.
 
 ```text
-                 J-29 INTERFACE ENGINE
+                 VEYLLISTO INTERFACE ENGINE
                          │
         ┌────────────────┼────────────────┐
         │                │                │
@@ -66,7 +66,7 @@ Future shells can present the same underlying Engine in completely different way
 
 # Core Architecture
 
-J-29 is organized around four major concepts:
+Veyllisto is organized around four major concepts:
 
 1. **Engine**
 2. **Shell**
@@ -135,9 +135,18 @@ The Terminal Shell provides:
 - Advanced Maintenance Terminal
 - Context-aware Settings / Media Tools navigation
 
-The v1.0 architecture is intended to support more than one interface presentation while preserving the same Engine and library state.
+Veyllisto v1.0 is intended to ship with **four first-party interface shells** while preserving the same Engine, library, configuration, favorites, recent history, metadata, and launch state across every experience.
 
-The planned second reference shell is a **classic late-1980s / early-1990s desktop-inspired interface**. Its purpose is to prove the shared Engine architecture rather than replace the J-29 Terminal.
+The planned v1.0 shell suite is:
+
+- **J-29 Terminal** — keyboard-first, immersive retro-futuristic terminal experience
+- **Classic Desktop** — mouse-and-keyboard late-1980s / early-1990s desktop-inspired environment
+- **Living Room** — controller-first, television and couch-gaming experience
+- **Arcade** — cabinet-style, game-first interface for dedicated arcade systems
+
+The J-29 Terminal remains the official reference implementation. Classic Desktop serves as the first major proof that the Engine is truly shell-independent. Living Room then establishes controller-first navigation and input abstractions, which can also support the Arcade shell.
+
+> **One Engine. Shared state. Multiple experiences.**
 
 ---
 
@@ -181,9 +190,9 @@ Unit ID: J29-001
 The same Engine could instead present another fictional machine:
 
 ```text
-Manufacturer: Solar Hardware Systems
-System: Pigeonaut OS
-Model: PX-4
+Manufacturer: Meridian Data Systems
+System: Meridian OS
+Model: MX-4
 ```
 
 ---
@@ -208,7 +217,7 @@ Model: PX-4
 
 ## Unified Game Library
 
-J-29 presents supported software through one shared library.
+Veyllisto presents supported software through one shared library.
 
 Current software sources include:
 
@@ -218,7 +227,7 @@ Current software sources include:
 - Emulator-managed software
 - Physical-media targets
 
-The interface does not require the user to think about where a program originally came from once it has entered the J-29 library.
+The interface does not require the user to think about where a program originally came from once it has entered the Veyllisto library.
 
 ---
 
@@ -244,7 +253,7 @@ Metadata is used across library browsing, launching, favorites, recent games, an
 
 ## Favorites & Recently Played
 
-J-29 maintains persistent favorite and recent-game state between sessions.
+Veyllisto maintains persistent favorite and recent-game state between sessions.
 
 Steam games, ROMs, local software, and other supported launch types participate in the same shared library experience.
 
@@ -252,7 +261,7 @@ Steam games, ROMs, local software, and other supported launch types participate 
 
 # Steam Integration
 
-J-29 can discover installed Steam libraries and titles automatically.
+Veyllisto can discover installed Steam libraries and titles automatically.
 
 Steam games are added to the same software library used by local software and emulated titles.
 
@@ -271,7 +280,7 @@ Steam is treated as a launch backend rather than a separate user-facing experien
 
 # ROM & Emulator Support
 
-J-29 can automatically scan configured ROM libraries and organize discovered software by platform.
+Veyllisto can automatically scan configured ROM libraries and organize discovered software by platform.
 
 Supported emulator workflows can use:
 
@@ -280,7 +289,7 @@ Supported emulator workflows can use:
 - Standalone emulators
 - Platform-specific emulator profiles
 
-A discovered ROM becomes a normal J-29 library entry.
+A discovered ROM becomes a normal Veyllisto library entry.
 
 The user does not need to manually navigate emulator directories during normal operation.
 
@@ -288,7 +297,7 @@ The user does not need to manually navigate emulator directories during normal o
 
 # Physical Media
 
-Physical media is one of J-29's core systems.
+Physical media is one of Veyllisto's core systems.
 
 Supported mounted media can include devices such as:
 
@@ -297,7 +306,7 @@ Supported mounted media can include devices such as:
 - External removable drives
 - Other compatible mounted media
 
-J-29 follows one central principle:
+Veyllisto follows one central principle:
 
 > **Physical media represents software. It does not require the software to physically reside on that media.**
 
@@ -309,7 +318,7 @@ A physical object can operate in several ways.
 
 The physical medium contains both:
 
-- J-29 metadata
+- Veyllisto metadata
 - The actual software or ROM payload
 
 Example:
@@ -340,7 +349,7 @@ platform=SNES
 game_id=ROM_SNES_6009C68D2439
 ```
 
-When the medium is inserted, J-29 resolves the `game_id` against the installed library and launches the corresponding software.
+When the medium is inserted, Veyllisto resolves the `game_id` against the installed library and launches the corresponding software.
 
 This means a tiny removable device can behave like a physical game disk even when the software itself lives on internal storage.
 
@@ -384,7 +393,7 @@ platform=STEAM
 game_id=STEAM_1658150
 ```
 
-When mounted, J-29 presents the collection through its own interface.
+When mounted, Veyllisto presents the collection through its own interface.
 
 Multiple programs can be launched from the same physical object without reinserting it between launches.
 
@@ -392,7 +401,7 @@ Multiple programs can be launched from the same physical object without reinsert
 
 ## Dynamic Media Interface
 
-When recognized J-29 media is mounted:
+When recognized Veyllisto media is mounted:
 
 ```text
 PHYSICAL MEDIA
@@ -400,7 +409,7 @@ PHYSICAL MEDIA
 
 appears dynamically on the main menu.
 
-J-29 also supports:
+Veyllisto also supports:
 
 - Media already inserted during startup
 - Hot removal
@@ -416,7 +425,7 @@ Removing the media removes its dynamic interface entry.
 
 # Physical Media Creator
 
-v0.29 introduced a complete built-in authoring system for J-29 physical media.
+v0.29 introduced a complete built-in authoring system for Veyllisto physical media.
 
 Normal users no longer need to manually edit `j29-media.ini` files or look up internal game IDs.
 
@@ -445,7 +454,7 @@ WRITE MEDIA
 
 Design principle:
 
-> **Users choose the software. J-29 writes the metadata.**
+> **Users choose the software. Veyllisto writes the metadata.**
 
 ---
 
@@ -453,12 +462,12 @@ Design principle:
 
 Users can:
 
-- Browse existing J-29 library groups
+- Browse existing Veyllisto library groups
 - Select a game
 - Preview generated metadata
 - Choose a safe removable target
 - Write a metadata-only launch key
-- Verify the new descriptor through the existing J-29 media reader
+- Verify the new descriptor through the existing Veyllisto media reader
 
 Internal game IDs are hidden from the normal creation workflow.
 
@@ -489,15 +498,15 @@ Current safety protections include:
 - Fixed/internal drive exclusion from creator targets
 - Conservative removable-media detection
 - Explicit write confirmation
-- Existing J-29 metadata protection
+- Existing Veyllisto metadata protection
 - Two-step confirmation for intentional replacement
-- Writes limited to J-29's own descriptor file
+- Writes limited to Veyllisto's own descriptor file
 - Unrelated files preserved
 - Post-write verification
 - Atomic replacement
 - Automatic restoration of the original descriptor if replacement verification fails
 
-Existing J-29 media cannot be replaced accidentally through a single Enter or write action.
+Existing Veyllisto media cannot be replaced accidentally through a single Enter or write action.
 
 Intentional reuse requires a deliberate replacement workflow.
 
@@ -505,7 +514,7 @@ Intentional reuse requires a deliberate replacement workflow.
 
 # Audio System
 
-J-29 includes an Engine-level semantic audio system.
+Veyllisto includes an Engine-level semantic audio system.
 
 The Shell requests events such as:
 
@@ -563,7 +572,7 @@ Validated states include:
 - REBOOTING
 - SHUTDOWN
 
-Auxiliary-display support remains optional. J-29 continues operating normally when no secondary display is present.
+Auxiliary-display support remains optional. Veyllisto continues operating normally when no secondary display is present.
 
 The Terminal Settings environment can configure the auxiliary-display enabled state, adapter, and display width. Adapter reload behavior is also available for testing and maintenance.
 
@@ -577,7 +586,7 @@ Architecture principle:
 
 v0.31 introduced a complete authenticated maintenance environment.
 
-The Maintenance Terminal keeps administrative and recovery functions separate from normal J-29 navigation while preserving an in-universe service experience.
+The Maintenance Terminal keeps administrative and recovery functions separate from normal Veyllisto navigation while preserving an in-universe service experience.
 
 Current capabilities include:
 
@@ -590,10 +599,10 @@ Current capabilities include:
 - Terminal Settings
 - Media Tools
 - Reboot Terminal
-- True process-level Restart J-29
+- True process-level Restart Veyllisto
 - Confirmed host Reboot System
 - Confirmed host Shutdown System
-- Return to normal J-29 operation
+- Return to normal Veyllisto operation
 
 The Advanced Terminal provides a controlled Callisto-style service console rather than exposing a raw host command shell.
 
@@ -613,7 +622,7 @@ RETURN
 CLEAR
 ```
 
-J-29 distinguishes three different levels of restart behavior:
+Veyllisto distinguishes three different levels of restart behavior:
 
 - **Reboot Terminal** — reruns the fictional J-29 boot sequence in the current process.
 - **Restart J-29** — starts a fresh J-29 process and reloads startup configuration and themes.
@@ -635,7 +644,7 @@ Design principle:
 
 # System Information
 
-J-29 can currently read host information including:
+Veyllisto can currently read host information including:
 
 - CPU model
 - Installed memory
@@ -734,6 +743,7 @@ The guided path is planned to cover:
 - Steam discovery
 - ROM-library locations
 - Emulator configuration
+- Interface Shell selection and preview
 - Theme / appearance basics
 - Audio settings
 - Physical-media support
@@ -742,6 +752,8 @@ The guided path is planned to cover:
 - Physical-media verification
 
 The Power User path can skip the wizard, and the guided setup will remain available later through Settings.
+
+For v1.0, the guided experience is also intended to let users preview and select their preferred installed Shell during initial configuration. The selected Shell becomes the normal Veyllisto startup experience and can be changed later through Settings.
 
 Design principle:
 
@@ -808,7 +820,7 @@ The reference J-29 build uses the **Raspberry Pi Retro Computer** enclosure orig
 
 The enclosure is the work of its original creator and is not part of the J-29 Interface Engine software.
 
-J-29 can also be used with:
+Veyllisto can also be used with:
 
 - Custom computer cases
 - Repurposed PCs
@@ -826,7 +838,7 @@ J-29 can also be used with:
 The project is organized around a small application entry point with Engine, Shell, Theme, and configuration layers.
 
 ```text
-J-29-Interface-Engine/
+Veyllisto-Interface-Engine/
 │
 ├── main.py
 ├── j29.py
@@ -891,8 +903,11 @@ Stable functionality should remain intact while new systems are introduced.
 | v0.33 | Appliance Mode | ⏳ Planned |
 | v0.34 | Boot Maintenance Console | ⏳ Planned |
 | v0.35 | Deployment Build | ⏳ Planned |
-| v0.36–v0.99 | Stabilization | ⏳ Planned |
-| v1.0 | Initial Public Release | 🎯 Target |
+| v0.36 | Classic Desktop Shell | ⏳ Planned |
+| v0.37 | Living Room Shell | ⏳ Planned |
+| v0.38 | Arcade Shell | ⏳ Planned |
+| v0.39–v0.99 | Shell Integration, Polish & Stabilization | ⏳ Planned |
+| v1.0 | Initial Public Release — Four First-Party Shells | 🎯 Target |
 
 See [`ROADMAP.md`](ROADMAP.md) for the detailed development plan.
 
@@ -902,7 +917,11 @@ See [`ROADMAP.md`](ROADMAP.md) for the detailed development plan.
 
 The initial public release is intended to deliver a complete dedicated-computer experience including:
 
-- J-29 Terminal Shell
+- Four first-party interface shells:
+  - J-29 Terminal
+  - Classic Desktop
+  - Living Room
+  - Arcade
 - Modular Interface Engine
 - Configurable machine identity
 - Theme support
@@ -925,40 +944,89 @@ The initial public release is intended to deliver a complete dedicated-computer 
 - Packaged deployment
 - Final cross-hardware regression testing
 
-The v1.0 architecture must also preserve shell-independent shared systems so the project is proven as an Interface Engine rather than a single terminal frontend.
+The v1.0 architecture must preserve shell-independent shared systems so Veyllisto is delivered as an Interface Engine rather than a collection of disconnected frontends.
+
+All four shells must consume the same underlying library and core state. Shells may present features differently, but they must not maintain duplicate implementations of shared systems such as favorites, recent history, Steam discovery, emulator configuration, physical media, metadata, or application settings.
+
+> **One Engine. Shared state. Multiple experiences.**
 
 ---
 
-# Future Shells
+# V1 Interface Shells
 
-The J-29 Terminal remains the official reference Shell.
+Veyllisto v1.0 is planned to include four first-party Shells that demonstrate substantially different ways of interacting with the same underlying Engine.
 
-The modular architecture is designed so other interfaces can use the same underlying Engine for:
+## J-29 Terminal
 
-- Games
-- Metadata
-- Favorites
-- Recent history
-- Steam
-- Emulators
-- Physical media
-- Configuration
-- System information
-- Shared services
+The **J-29 Terminal** is the original Veyllisto reference Shell.
 
-For v1.0, a second distinct interface is planned as an architecture demonstration. The reference concept is a **classic late-1980s / early-1990s desktop-inspired shell** sharing the same library and Engine state as the J-29 Terminal.
+It provides an immersive keyboard-driven retro-futuristic terminal experience built around the fictional Callisto J-29 computer system.
 
-Longer-term shell possibilities include:
+## Classic Desktop
 
-- Retro console interfaces
+The **Classic Desktop** Shell is inspired by late-1980s and early-1990s graphical desktop environments.
+
+It is the first major architectural test of Veyllisto's shell independence: the same games, metadata, favorites, recent history, physical media, configuration, and Engine services must remain available without relying on the J-29 Terminal presentation.
+
+## Living Room
+
+The **Living Room** Shell is designed for televisions, handheld PCs, and couch gaming.
+
+Its primary interaction model is controller-first navigation with large, readable presentation and streamlined access to the shared Veyllisto library.
+
+Building this Shell establishes reusable controller and directional-navigation abstractions for Veyllisto.
+
+## Arcade
+
+The **Arcade** Shell provides a cabinet-style, game-first experience intended for dedicated arcade systems and custom builds.
+
+It can reuse Veyllisto's shared library, metadata, launch services, favorites, recent history, and controller/input abstractions while presenting a deliberately focused arcade interface.
+
+## Planned Development Order
+
+```text
+J-29 TERMINAL
+     │
+     ▼
+CLASSIC DESKTOP
+     │
+     ▼
+SHELL CONTRACT / ENGINE BOUNDARIES
+     │
+     ▼
+LIVING ROOM
+     │
+     ▼
+CONTROLLER / INPUT ABSTRACTION
+     │
+     ▼
+ARCADE
+     │
+     ▼
+V1 SHELL INTEGRATION & STABILIZATION
+```
+
+The purpose of the four-shell suite is not to create four separate launchers.
+
+Each Shell is a different presentation of the same Veyllisto system.
+
+> **One Engine. Shared state. Multiple experiences.**
+
+A user should not need separate game libraries, favorites, recent history, metadata, or configuration for every interface.
+
+## Future / Community Shells
+
+After the v1.0 first-party shell suite is established, additional Shells may include:
+
 - Linux-style terminals
-- Other fictional computers
-- Desktop-inspired environments
+- Other fictional computer systems
+- Additional desktop-inspired environments
+- Specialized handheld interfaces
 - Community-created shells
+- Experimental interfaces not included with the core distribution
 
-A user should not need separate game libraries for every interface.
+Future Shell packages are intended to use the same shared Engine APIs and compatibility model as the first-party Shells.
 
----
 
 # Shell Compatibility
 
@@ -980,7 +1048,7 @@ This allows shell development to grow without silently breaking existing install
 
 # Open Source
 
-J-29 Interface Engine is released under the **MIT License**.
+Veyllisto Interface Engine is released under the **MIT License**.
 
 You are free to use, modify, distribute, and build upon the software under the terms of that license.
 
@@ -1005,7 +1073,7 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information.
 
 # Development Philosophy
 
-J-29 development follows one rule:
+Veyllisto development follows one rule:
 
 > **Big vision. Small versions. Stable checkpoints. No chaos.**
 
@@ -1028,7 +1096,7 @@ The goal is to arrive at version 1.0 with a system that is understandable, testa
 
 # Project Vision
 
-J-29 started with a fictional retro computer.
+Veyllisto started with a fictional retro computer.
 
 The larger idea is a platform where modern software can feel like it belongs to a dedicated machine again.
 
@@ -1050,9 +1118,8 @@ And modern hardware can disappear behind the experience.
 
 # Disclaimer
 
-J-29 Interface Engine is experimental software under active development.
+Veyllisto Interface Engine is experimental software under active development.
 
 Configuration formats, internal APIs, Shell behavior, platform support, and feature organization may change before version 1.0.
 
 The **Callisto Computer Systems**, **J-29 Terminal**, and related fictional systems are used as the reference environment for development and demonstration of the Interface Engine.
-
