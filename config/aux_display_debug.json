@@ -1,6 +1,6 @@
 {
-  "state": "SHUTDOWN",
+  "state": "READY",
   "line1": "J-29",
-  "line2": "SHUTDOWN",
-  "updated_at": "2026-09-09T01:01:11.110197+00:00"
+  "line2": "READY",
+  "updated_at": "2026-09-09T01:49:08.046815+00:00"
 }

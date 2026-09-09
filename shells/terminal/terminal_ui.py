@@ -331,6 +331,10 @@ def execute_command():
         remember_current_screen()
         show_system_info()
 
+    elif command in ("AUX", "AUXDISPLAY", "DISPLAY"):
+        remember_current_screen()
+        show_aux_display_diagnostics()
+
     elif command == "BACK":
 
         if (
@@ -417,6 +421,9 @@ def update_footer():
     elif current_screen == "system":
         set_footer("ESC BACK")
 
+    elif current_screen == "aux_display":
+        set_footer("↑↓ MOVE   ENTER SELECT   R REFRESH   ESC BACK")
+
     elif current_screen == "media_prompt":
         set_footer("Y/ENTER OPEN   N/ESC IGNORE")
 
@@ -493,6 +500,9 @@ def clear_current_screen():
     elif current_screen == "system":
         show_system_info()
 
+    elif current_screen == "aux_display":
+        draw_aux_display_diagnostics()
+
     elif current_screen == "help":
         show_command_help()
 
@@ -537,6 +547,120 @@ def clear_current_screen():
 
     elif current_screen == "media_creator_result":
         draw_media_creator_result()
+
+
+def get_aux_display_options():
+    return [
+        ("TEST DISPLAY", "test"),
+        ("RELOAD ADAPTER", "reload"),
+        ("BACK", "back"),
+    ]
+
+
+def show_aux_display_diagnostics(reset_selection=True):
+    global current_screen, selected_aux_option
+
+    current_screen = "aux_display"
+    if reset_selection:
+        selected_aux_option = 0
+
+    scanline_canvas.itemconfig(canvas_cursor, state="normal")
+    set_title(
+        "========================================\n"
+        "        AUXILIARY DISPLAY\n"
+        "========================================"
+    )
+    draw_aux_display_diagnostics()
+    scanline_canvas.coords(canvas_cursor, 60, get_prompt_y())
+
+
+def draw_aux_display_diagnostics():
+    try:
+        status = engine.get_aux_display_status()
+    except Exception as exc:
+        status = {
+            "enabled": False,
+            "adapter": "UNKNOWN",
+            "available": False,
+            "error": str(exc),
+        }
+
+    current_settings = engine.get_settings()
+    enabled = bool(status.get("enabled"))
+    available = bool(status.get("available"))
+
+    if not enabled:
+        status_label = "DISABLED"
+    elif available:
+        status_label = "AVAILABLE"
+    else:
+        status_label = "UNAVAILABLE"
+
+    adapter = str(status.get("adapter") or "NONE").upper()
+    width = current_settings.get("aux_display_width", 16)
+    port = str(current_settings.get("aux_display_serial_port") or "—")
+    error = str(status.get("error") or "NONE")
+
+    lines = [
+        f"STATUS .......... {status_label}",
+        f"ADAPTER ......... {adapter}",
+        f"WIDTH ........... {width}",
+        f"PORT ............ {port}",
+        f"LAST ERROR ...... {error}",
+        "",
+    ]
+
+    for index, (label, _action) in enumerate(get_aux_display_options()):
+        marker = "> " if index == selected_aux_option else "  "
+        lines.append(marker + label)
+
+    set_menu("\n".join(lines))
+    update_footer()
+
+
+def test_aux_display_from_ui():
+    try:
+        success = engine.test_aux_display()
+    except Exception:
+        success = False
+
+    if success:
+        engine.play_sound("access_granted")
+        show_temporary_status("DISPLAY TEST SENT", duration=1800)
+    else:
+        engine.play_sound("error")
+        status = engine.get_aux_display_status()
+        show_temporary_status(
+            status.get("error") or "DISPLAY UNAVAILABLE",
+            duration=2500,
+        )
+
+    draw_aux_display_diagnostics()
+
+
+def reload_aux_display_from_ui():
+    try:
+        engine.reload_aux_display()
+        status = engine.get_aux_display_status()
+
+        if status.get("available"):
+            engine.play_sound("access_granted")
+            show_temporary_status("AUX DISPLAY RELOADED", duration=1800)
+        elif status.get("enabled"):
+            engine.play_sound("error")
+            show_temporary_status(
+                status.get("error") or "DISPLAY UNAVAILABLE",
+                duration=2500,
+            )
+        else:
+            show_temporary_status("AUX DISPLAY DISABLED", duration=1800)
+
+    except Exception as exc:
+        engine.play_sound("error")
+        show_temporary_status(str(exc), duration=2500)
+
+    draw_aux_display_diagnostics()
+
 
 def get_media_tool_options():
     return [
@@ -1876,6 +2000,7 @@ current_library_folder = None
 selected_game_record = None
 selected_media_item = 0
 selected_media_tool = 0
+selected_aux_option = 0
 selected_creator_game = 0
 creator_selected_game = None
 creator_preview = None
@@ -1946,6 +2071,9 @@ def go_back():
     elif previous == "system":
         show_system_info()
 
+    elif previous == "aux_display":
+        show_aux_display_diagnostics()
+
     elif previous == "help":
         show_command_help()
 
@@ -2001,6 +2129,7 @@ def get_main_menu_options():
 
     options.extend([
         ("SYSTEM INFO", "system"),
+        ("AUX DISPLAY", "aux_display"),
         ("EXIT", "exit"),
     ])
     return options
@@ -2540,6 +2669,7 @@ def key_pressed(event):
 
     global selected_option, selected_game, selected_media_item, command_mode
     global selected_media_tool, selected_creator_game, selected_creator_target
+    global selected_aux_option
     global selected_creator_group
     global selected_creator_collection_game, selected_creator_collection_order
     global creator_collection_title
@@ -2552,7 +2682,7 @@ def key_pressed(event):
     if (
         event.keysym in ("Up", "Down")
         and current_screen in (
-            "main", "games", "favorites", "recent", "media_collection",
+            "main", "games", "favorites", "recent", "media_collection", "aux_display",
             "media_tools", "media_creator_groups", "media_creator_games", "media_creator_targets",
             "media_creator_collection_games", "media_creator_collection_order",
         )
@@ -2829,6 +2959,10 @@ def key_pressed(event):
                 remember_current_screen()
                 show_system_info()
 
+            elif action == "aux_display":
+                remember_current_screen()
+                show_aux_display_diagnostics()
+
             elif action == "exit":
                 shutdown_terminal()
 
@@ -3002,6 +3136,34 @@ def key_pressed(event):
             detail_parent_folder = None
             detail_parent_index = selected_game
             show_game_details(game)
+
+        elif event.keysym == "Escape":
+            go_back()
+
+    elif current_screen == "aux_display":
+        options = get_aux_display_options()
+
+        if event.keysym == "Up":
+            selected_aux_option = (selected_aux_option - 1) % len(options)
+            draw_aux_display_diagnostics()
+
+        elif event.keysym == "Down":
+            selected_aux_option = (selected_aux_option + 1) % len(options)
+            draw_aux_display_diagnostics()
+
+        elif event.keysym.lower() == "r":
+            reload_aux_display_from_ui()
+
+        elif event.keysym == "Return":
+            engine.play_sound("select")
+            action = options[selected_aux_option][1]
+
+            if action == "test":
+                test_aux_display_from_ui()
+            elif action == "reload":
+                reload_aux_display_from_ui()
+            else:
+                go_back()
 
         elif event.keysym == "Escape":
             go_back()

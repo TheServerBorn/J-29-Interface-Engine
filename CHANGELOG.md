@@ -1,3 +1,15 @@
+## v0.30.4 — Auxiliary Display Settings / Diagnostics UI — TEST BUILD
+
+### Added
+- In-app Auxiliary Display diagnostics screen.
+- AUX DISPLAY main-menu entry.
+- AUX / AUXDISPLAY / DISPLAY commands.
+- Live adapter status, width, port, and last-error reporting.
+- TEST DISPLAY and RELOAD ADAPTER actions.
+- Temporary DISPLAY_TEST state.
+
+---
+
 ## v0.30.3 — Physical Display Adapter / Hardware Prep — TEST BUILD
 
 ### Added

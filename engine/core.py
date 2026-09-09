@@ -80,6 +80,15 @@ class J29Engine:
     def get_aux_display_status(self):
         return self._aux_display.get_adapter_status()
 
+    def test_aux_display(self):
+        """Send a temporary, recognizable auxiliary-display test."""
+        return self._aux_display.show(
+            "DISPLAY_TEST",
+            "J-29",
+            "DISPLAY TEST",
+            force=True,
+        )
+
     def reload_aux_display(self):
         self._aux_display.configure(load_settings())
 

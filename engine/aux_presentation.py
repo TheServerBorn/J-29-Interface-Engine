@@ -19,6 +19,7 @@ STATE_RULES = {
     "REBOOTING": {"priority": 90, "persistent": True, "line1": "J-29", "line2": "REBOOTING"},
     "MAINTENANCE": {"priority": 50, "persistent": True, "line1": "J-29", "line2": "MAINTENANCE"},
     "MEDIA_DETECTED": {"priority": 30, "persistent": False, "timeout_ms": 3000, "line1": "MEDIA DETECTED"},
+    "DISPLAY_TEST": {"priority": 40, "persistent": False, "timeout_ms": 2000, "line1": "J-29", "line2": "DISPLAY TEST"},
     "GAME_LAUNCHING": {"priority": 60, "persistent": True, "line1": "GAME LAUNCHING"},
     "GAME_RUNNING": {"priority": 70, "persistent": True, "line1": "GAME RUNNING"},
     "LAUNCH_FAILED": {"priority": 75, "persistent": False, "timeout_ms": 2500, "line1": "LAUNCH FAILED"},
