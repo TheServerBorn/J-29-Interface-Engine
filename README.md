@@ -172,6 +172,7 @@ Cabinet-style game-first experience
 </tr>
 </table>
 
+Shell concept previews — final interfaces may change before v1.0.
 All four Shells use the same underlying Veyllisto Engine and shared state.
 
 A user should not need separate game libraries, favorites, metadata, emulator configuration, or recent history for every interface.
