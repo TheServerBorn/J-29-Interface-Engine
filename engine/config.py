@@ -144,6 +144,11 @@ def load_settings(config_path="config/settings.ini"):
             "windowed_key",
             fallback="F12"
         ),
+        "first_launch_complete": config.getboolean(
+            "SETUP",
+            "first_launch_complete",
+            fallback=False,
+        ),
     }
 
 
