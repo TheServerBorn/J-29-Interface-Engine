@@ -151,6 +151,42 @@ def load_settings(config_path="config/settings.ini"):
         ),
     }
 
+def update_setting(
+    section,
+    key,
+    value,
+    config_path="config/settings.ini",
+):
+    """
+    Atomically update a single setting while preserving all other
+    sections and values.
+    """
+    ensure_config_file(config_path)
+    path = Path(config_path)
+
+    config = configparser.ConfigParser()
+    config.read(path, encoding="utf-8")
+
+    if not config.has_section(section):
+        config.add_section(section)
+
+    config.set(section, key, str(value))
+
+    temp_path = path.with_suffix(path.suffix + ".tmp")
+
+    try:
+        with temp_path.open("w", encoding="utf-8") as handle:
+            config.write(handle)
+
+        temp_path.replace(path)
+
+    except Exception:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+        raise
 
 MAINTENANCE_SETTING_MAP = {
     "fullscreen": ("INTERFACE", "fullscreen", "bool"),
