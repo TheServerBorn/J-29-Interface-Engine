@@ -4157,6 +4157,11 @@ def blink_cursor():
 def run():
     root.bind("<Key>", key_pressed)
     root.bind("<FocusIn>", _aux_focus_return, add="+")
+
+    root.lift()
+    root.focus_force()
+    root.after(100, root.focus_force)
+
     engine.set_aux_display("BOOTING", "J-29", "BOOTING")
 
     if settings["boot_sequence"]:

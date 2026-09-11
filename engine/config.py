@@ -44,7 +44,7 @@ def load_identity(config_path="config/identity.ini"):
         "version": config.get(
             "SYSTEM",
             "version",
-            fallback="0.15"
+            fallback="0.31"
         ),
         "unit_id": config.get(
             "SYSTEM",

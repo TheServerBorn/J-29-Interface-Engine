@@ -1,4 +1,7 @@
-from engine.setup_state import is_first_launch_complete
+from engine.setup_state import (
+    is_first_launch_complete,
+    mark_first_launch_complete,
+)
 from setup.first_launch import run as run_first_launch
 
 
@@ -15,8 +18,9 @@ def main():
             print("Guided setup selected.")
             return
 
-        if choice == "power_user":
-            print("Power User setup selected.")
+        if choice == "power_user_confirmed":
+            mark_first_launch_complete()
+            run_terminal()
             return
 
         return
