@@ -34,6 +34,7 @@ def run():
     canvas.pack(fill="both", expand=True)
 
     selected = 0
+    result = None
 
     canvas.create_text(
         60,
@@ -141,7 +142,10 @@ def run():
             redraw_selection()
 
         elif event.keysym == "Return":
-            print(f"Selected: {OPTIONS[selected][0]}")
+            nonlocal result
+
+            result = "beginner" if selected == 0 else "power_user"
+            root.destroy()
 
     root.bind("<Key>", handle_key)
 
@@ -149,6 +153,7 @@ def run():
 
     root.mainloop()
 
+    return result
 
 if __name__ == "__main__":
     run()
